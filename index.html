@@ -563,10 +563,34 @@ function parsePastedData(text, birthISO) {
     for (const tok of tokens) {
       // Skip header words like "Date", "Ht", "Wt", "日期", "身高", "體重", "BMI"
       if (/^(date|ht|wt|height|weight|bmi|日期|身高|體重)$/i.test(tok)) continue;
-      // ISO date or ROC date
-      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(tok) || /^\d{2,3}[-/]\d{1,2}[-/]\d{1,2}$/.test(tok)) {
+      // ISO date or ROC date with separators
+      if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/.test(tok) || /^\d{2,3}[-/.]\d{1,2}[-/.]\d{1,2}$/.test(tok)) {
         dateToken = tok;
         continue;
+      }
+      // Compact 8-digit Western date YYYYMMDD (e.g. 20260101)
+      if (/^\d{8}$/.test(tok)) {
+        const y = parseInt(tok.slice(0, 4)), m = parseInt(tok.slice(4, 6)), d = parseInt(tok.slice(6, 8));
+        if (y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          dateToken = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          continue;
+        }
+      }
+      // Compact 7-digit ROC date YYYMMDD (e.g. 1150101 → 民國 115 年)
+      if (/^\d{7}$/.test(tok)) {
+        const rocY = parseInt(tok.slice(0, 3)), m = parseInt(tok.slice(3, 5)), d = parseInt(tok.slice(5, 7));
+        if (rocY >= 1 && rocY <= 200 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          dateToken = `${rocY + 1911}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          continue;
+        }
+      }
+      // Compact 6-digit ROC date YYMMDD (e.g. 940315 → 民國 94 年; older patients)
+      if (/^\d{6}$/.test(tok)) {
+        const rocY = parseInt(tok.slice(0, 2)), m = parseInt(tok.slice(2, 4)), d = parseInt(tok.slice(4, 6));
+        if (rocY >= 30 && rocY <= 130 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          dateToken = `${rocY + 1911}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          continue;
+        }
       }
       // Grade + semester e.g. 小一上, 國二下
       const m = tok.match(/^(小一|小二|小三|小四|小五|小六|國一|國二|國三|高一|高二|高三|幼小|幼中|幼大|小班|中班|大班|幼兒園小班|幼兒園中班|幼兒園大班)(上|下)?$/);
@@ -592,17 +616,26 @@ function parsePastedData(text, birthISO) {
       // sanity check
       if (h >= 30 && h <= 220 && w >= 2 && w <= 200) {
         height = h; weight = w;
+      } else if (h >= 30 && h <= 220) {
+        height = h; // only height plausible
+      } else if (w >= 2 && w <= 200) {
+        weight = w; // only weight plausible (first num was bad)
       }
+    } else if (numbers.length === 1) {
+      // Single number — guess whether it's height or weight by range
+      const n = numbers[0];
+      if (n >= 30 && n <= 220) height = n;
+      else if (n >= 2 && n < 30) weight = n;
     }
 
-    if (height == null || weight == null) {
-      errors.push(`無法解析：${line}`);
+    if (height == null && weight == null) {
+      errors.push(`無法解析（缺少身高體重）：${line}`);
       continue;
     }
 
     if (dateToken) {
-      // normalize date
-      let dateISO = dateToken.replace(/\//g, "-");
+      // normalize date — accept /, -, . as separators
+      let dateISO = dateToken.replace(/[/.]/g, "-");
       // ROC date detection: if first part is 2-3 digits and < 200, treat as ROC year
       const parts = dateISO.split("-");
       if (parts[0].length <= 3 && parseInt(parts[0]) < 200) {
@@ -1409,7 +1442,7 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
 
   const submit = () => {
     const h = parseFloat(height), w = parseFloat(weight);
-    if (!h || !w) { alert("請填寫身高與體重"); return; }
+    if (!h && !w) { alert("請至少填寫身高或體重其中一項"); return; }
     if (computed.age == null) { alert("無法計算年齡，請檢查日期或年級設定"); return; }
     if (computed.age < 0 || computed.age > 18.5) { alert("年齡超出參考範圍 (0-18.5 歲)"); return; }
     let treatments = null;
@@ -1451,7 +1484,7 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
       grade: mode === "grade" ? grade : null,
       semester: mode === "grade" ? semester : null,
       age: computed.age,
-      height: h, weight: w, bmi,
+      height: h || null, weight: w || null, bmi,
       boneAge: parseFloat(boneAge) || null,
       treatments,
       recordType,
@@ -1674,9 +1707,9 @@ function PasteImport({ patient, onImport, onCancel }) {
         grade: r.grade || null,
         semester: r.semester || null,
         age,
-        height: r.height,
-        weight: r.weight,
-        bmi: r.weight / Math.pow(r.height / 100, 2),
+        height: r.height ?? null,
+        weight: r.weight ?? null,
+        bmi: (r.height && r.weight) ? r.weight / Math.pow(r.height / 100, 2) : null,
         boneAge: null,
         note: "",
         recordType: "initial",
@@ -1698,6 +1731,8 @@ function PasteImport({ patient, onImport, onCancel }) {
             <li>「年級+學期 身高 體重」例如：<code className="bg-white px-1 rounded">小一上 115.9 23.0</code></li>
             <li>「日期 身高 體重」例如：<code className="bg-white px-1 rounded">2024-05-15 115.9 23.0</code></li>
             <li>支援西元/民國年（民國年自動轉換）</li>
+            <li>日期可用 <code className="bg-white px-1 rounded">/</code>、<code className="bg-white px-1 rounded">-</code>、<code className="bg-white px-1 rounded">.</code> 分隔，或純數字如 <code className="bg-white px-1 rounded">20260101</code>、<code className="bg-white px-1 rounded">1150101</code></li>
+            <li>身高、體重可只填其中一項</li>
             <li>每行一筆紀錄，欄位用空白、tab、逗號或斜線分隔</li>
             <li>標題行（如 Date Ht Wt）會自動忽略</li>
           </ul>
@@ -1738,7 +1773,7 @@ function PasteImport({ patient, onImport, onCancel }) {
                       const age = r.mode === "date"
                         ? ageFromDates(patient.birth, r.measureDate)
                         : ageFromGradeSemester(patient.birth, r.grade, r.semester)?.age;
-                      const bmi = r.weight / Math.pow(r.height / 100, 2);
+                      const bmi = (r.height && r.weight) ? r.weight / Math.pow(r.height / 100, 2) : null;
                       const labelTime = r.mode === "grade"
                         ? `${GRADE_OPTIONS.find(g => g.value === r.grade)?.label} ${r.semester} (${r.measureDate})`
                         : r.measureDate;
@@ -2315,7 +2350,7 @@ function PrintChart({ title, unit, sex, metric, measurements, ageRange }) {
   }, [sex, metric, ageRange, isBmi]);
 
   const points = useMemo(() => measurements
-    .filter(m => m.age >= ageRange[0] && m.age <= ageRange[1] && (!isBmi || m.bmi != null))
+    .filter(m => m.age >= ageRange[0] && m.age <= ageRange[1] && (isBmi ? m.bmi != null : (metric === "h" ? m.height != null : m.weight != null)))
     .map(m => ({ age: m.age, value: isBmi ? m.bmi : (metric === "h" ? m.height : m.weight), recordType: m.recordType }))
     .sort((a, b) => a.age - b.age), [measurements, metric, ageRange, isBmi]);
 
