@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>蒼嵐健康美學診所 ｜ 兒童生長曲線管理系統</title>
+<title>玉齡醫師 兒童生長曲線管理系統</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
 
 <!-- Suppress Tailwind Play CDN production warning (we are local-only, not production website) -->
@@ -1053,7 +1053,7 @@ function PatientList({ patients, onSelect, onNew, onDelete, loading, onExport, o
                         daysSince != null && daysSince >= 3 ? "notice" : null;
   return (
     <div className="min-h-screen bg-stone-50">
-      <Header title="蒼嵐健康美學診所 ｜ 兒童生長曲線管理系統" right={
+      <Header title="玉齡醫師 兒童生長曲線管理系統" right={
         <div className="flex items-center gap-2">
           <button onClick={onImport} className="flex items-center gap-1 px-3 py-1.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-100">
             <ClipboardPaste size={14} /> 匯入
@@ -2530,7 +2530,7 @@ function PrintView({ patient, onClose }) {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               <tr>
-                <td style={{ fontSize: 16, fontWeight: 700, color: "#0c4a6e", textAlign: "left", padding: 0 }}>蒼嵐健康美學診所 兒童生長報告</td>
+                <td style={{ fontSize: 16, fontWeight: 700, color: "#0c4a6e", textAlign: "left", padding: 0 }}>玉齡醫師 兒童生長報告</td>
                 <td style={{ fontSize: 9, color: "#78716c", textAlign: "right", padding: 0, verticalAlign: "bottom" }}>列印日期：{todayISO()}</td>
               </tr>
             </tbody>
