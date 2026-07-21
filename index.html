@@ -3540,6 +3540,82 @@ function ImportDialog({ onClose, onDone }) {
 }
 
 // =================== App ===================
+// =================== SOAP → Growth Chart Transfer Modal ===================
+function SoapTransferModal({ transfer, matchedPatient, onConfirm, onDismiss }) {
+  const isNew = !matchedPatient;
+  return (
+    <Modal onClose={onDismiss} size="md">
+      <div className="px-6 py-4 border-b border-stone-200">
+        <h2 className="text-lg font-serif flex items-center gap-2">
+          🚀 從 SOAP 產生器接收資料
+        </h2>
+      </div>
+      <div className="p-6 space-y-4">
+        <div className={`rounded-lg p-3 border ${isNew ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
+          <div className={`text-sm font-medium ${isNew ? "text-amber-800" : "text-emerald-800"}`}>
+            {isNew
+              ? `找不到病歷號 ${transfer.chartNo}，將新增病人並匯入資料`
+              : `匯入到既有病人：${matchedPatient.name} (${matchedPatient.chartNo})`}
+          </div>
+        </div>
+        <div className="text-sm space-y-2 bg-stone-50 rounded-lg p-3 border border-stone-200">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div><span className="text-stone-500">姓名：</span>{transfer.name}</div>
+            <div><span className="text-stone-500">病歷號：</span>{transfer.chartNo}</div>
+            <div><span className="text-stone-500">性別：</span>{transfer.sex === "boy" ? "男" : "女"}</div>
+            <div><span className="text-stone-500">生日：</span>{transfer.birth}</div>
+            {(transfer.fatherH || transfer.motherH) && (
+              <div className="col-span-2">
+                <span className="text-stone-500">父母身高：</span>
+                {transfer.fatherH ? `父 ${fmt(transfer.fatherH, 1)} cm` : ""}
+                {transfer.fatherH && transfer.motherH ? " / " : ""}
+                {transfer.motherH ? `母 ${fmt(transfer.motherH, 1)} cm` : ""}
+                {matchedPatient && (matchedPatient.fatherH || matchedPatient.motherH) && (
+                  <span className="text-stone-400 text-xs ml-2">（既有資料不覆蓋）</span>
+                )}
+              </div>
+            )}
+          </div>
+          {(transfer.height || transfer.weight || transfer.boneAge != null) && (
+            <div className="border-t border-stone-200 pt-2 mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="col-span-2 text-xs font-medium text-stone-600 mb-1">本次量測</div>
+              <div><span className="text-stone-500">量測日期：</span>{transfer.measureDate}</div>
+              <div></div>
+              {transfer.height && <div><span className="text-stone-500">身高：</span><span className="font-medium">{fmt(transfer.height, 1)} cm</span></div>}
+              {transfer.weight && <div><span className="text-stone-500">體重：</span><span className="font-medium">{fmt(transfer.weight, 1)} kg</span></div>}
+              {transfer.boneAge != null && <div className="col-span-2"><span className="text-stone-500">骨齡：</span><span className="font-medium">{fmt(transfer.boneAge, 2)} 歲</span> {transfer.boneAgeDate && <span className="text-stone-400 text-xs">({transfer.boneAgeDate})</span>}</div>}
+            </div>
+          )}
+          {transfer.growthRecords && transfer.growthRecords.length > 0 && (
+            <div className="border-t border-stone-200 pt-2 mt-2">
+              <div className="text-xs font-medium text-stone-600 mb-1.5">
+                過去生長紀錄 ({transfer.growthRecords.length} 筆)
+                {matchedPatient && <span className="text-stone-400 ml-2">（同日期不重複匯入）</span>}
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                {transfer.growthRecords.map((g, i) => (
+                  <div key={i}>
+                    <span className="text-stone-500">{g.semester}：</span>
+                    {g.height ? `${fmt(g.height, 1)} cm` : ""}
+                    {g.height && g.weight ? " / " : ""}
+                    {g.weight ? `${fmt(g.weight, 1)} kg` : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="px-6 py-4 border-t border-stone-200 bg-stone-50 flex justify-end gap-2">
+        <button onClick={onDismiss} className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-white">取消</button>
+        <button onClick={onConfirm} className="px-4 py-2 text-sm bg-stone-900 text-white rounded-lg hover:bg-stone-800">
+          {isNew ? "新增病人並匯入" : "確認匯入"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function App() {
   const [view, setView] = useState("list");
   const [patients, setPatients] = useState([]);
@@ -3559,6 +3635,37 @@ function App() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [lastExport, setLastExport] = useState(null);
+  const [pendingTransfer, setPendingTransfer] = useState(null);
+
+  // Check for SOAP transfer on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("transfer") === "1") {
+      try {
+        const raw = localStorage.getItem("pending_growth_transfer");
+        if (raw) {
+          const data = JSON.parse(raw);
+          // Sanity check: not older than 10 minutes
+          if (Date.now() - data.timestamp < 10 * 60 * 1000) {
+            setPendingTransfer(data);
+          }
+          localStorage.removeItem("pending_growth_transfer");
+        }
+      } catch (e) { console.error("Transfer read failed", e); }
+      // Clean URL so refresh doesn't retry
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  // Once patients loaded, if there's a pending transfer with a match, auto-open the patient
+  useEffect(() => {
+    if (!pendingTransfer || loading) return;
+    const match = patients.find(p => (p.chartNo || "").trim() === (pendingTransfer.chartNo || "").trim());
+    if (match) {
+      setCurrentId(match.id);
+      setView("patient");
+    }
+  }, [pendingTransfer, loading, patients]);
 
   useEffect(() => {
     setLastExport(getLastExportTime());
@@ -3786,6 +3893,130 @@ function App() {
     await persistPatient({ ...currentPatient, treatments: newList });
   };
 
+  // Match against pending SOAP transfer
+  const matchedTransferPatient = useMemo(() => {
+    if (!pendingTransfer) return null;
+    return patients.find(p => (p.chartNo || "").trim() === (pendingTransfer.chartNo || "").trim()) || null;
+  }, [pendingTransfer, patients]);
+
+  const handleTransferConfirm = async () => {
+    if (!pendingTransfer) return;
+    const t = pendingTransfer;
+
+    let patient = matchedTransferPatient;
+    if (patient) {
+      // Load full patient (index has limited fields)
+      patient = await loadPatient(patient.id) || patient;
+    } else {
+      // Create new patient from transfer data
+      patient = {
+        id: uid(),
+        name: t.name,
+        chartNo: t.chartNo,
+        sex: t.sex,
+        birth: t.birth,
+        fatherH: null, motherH: null, note: "",
+        measurements: [], boneAges: [], treatments: [],
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    // Parent heights: fill in only if patient's fields are empty (don't overwrite)
+    let fatherH = patient.fatherH, motherH = patient.motherH;
+    if (!fatherH && t.fatherH) fatherH = t.fatherH;
+    if (!motherH && t.motherH) motherH = t.motherH;
+
+    let newMs = [...(patient.measurements || [])];
+
+    // Add today's measurement if there's any current-visit data
+    if (t.height || t.weight || t.boneAge != null) {
+      const age = ageFromDates(t.birth, t.measureDate);
+      if (age != null) {
+        const bmi = (t.height && t.weight) ? t.weight / Math.pow(t.height / 100, 2) : null;
+        newMs.push({
+          id: uid(),
+          measureDate: t.measureDate,
+          age,
+          height: t.height ?? null,
+          weight: t.weight ?? null,
+          bmi,
+          boneAge: t.boneAge ?? null,
+          note: "自 SOAP 產生器匯入",
+          recordType: "followup",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Add growth records from SOAP (semester-based history)
+    let addedGrowthCount = 0, skippedGrowthCount = 0;
+    if (t.growthRecords && t.growthRecords.length > 0) {
+      for (const g of t.growthRecords) {
+        // Parse semester like "小一上" → grade "小一", semester "上"
+        const m = g.semester.match(/^(小一|小二|小三|小四|小五|小六|國一|國二|國三|高一|高二|高三|幼小|幼中|幼大|小班|中班|大班|幼兒園小班|幼兒園中班|幼兒園大班)(上|下)$/);
+        if (!m) continue;
+        const grade = m[1], semester = m[2];
+        const info = ageFromGradeSemester(t.birth, grade, semester);
+        if (!info || info.age == null) continue;
+        // Skip if a measurement already exists for this date (avoid duplicates on re-import)
+        const dup = newMs.some(x => x.measureDate === info.inferredDate);
+        if (dup) { skippedGrowthCount++; continue; }
+        const bmi = (g.height && g.weight) ? g.weight / Math.pow(g.height / 100, 2) : null;
+        newMs.push({
+          id: uid(),
+          measureDate: info.inferredDate,
+          age: info.age,
+          height: g.height ?? null,
+          weight: g.weight ?? null,
+          bmi,
+          boneAge: null,
+          note: `${g.semester} (自 SOAP 產生器匯入)`,
+          recordType: "followup",
+          createdAt: new Date().toISOString(),
+        });
+        addedGrowthCount++;
+      }
+    }
+    newMs.sort((a, b) => a.age - b.age);
+
+    // Handle bone age
+    const newBoneAges = [...(patient.boneAges || [])];
+    if (t.boneAge != null) {
+      // Find the just-added current-visit measurement
+      const todayMs = newMs.find(m => m.measureDate === t.measureDate && m.note === "自 SOAP 產生器匯入");
+      const chronoAge = todayMs ? todayMs.age : ageFromDates(t.birth, t.measureDate);
+      if (chronoAge != null) {
+        newBoneAges.push({
+          id: uid(),
+          measureDate: t.boneAgeDate || t.measureDate,
+          chronoAge,
+          boneAge: t.boneAge,
+          linkedHeight: t.height ?? null,
+          note: "自 SOAP 產生器匯入",
+          linkedMeasurementId: todayMs ? todayMs.id : undefined,
+          createdAt: new Date().toISOString(),
+        });
+        newBoneAges.sort((a, b) => a.chronoAge - b.chronoAge);
+      }
+    }
+
+    const updated = { ...patient, fatherH, motherH, measurements: newMs, boneAges: newBoneAges, lastVisit: t.measureDate };
+    await savePatient(updated);
+    const idx = await loadIndex();
+    let newIdx;
+    if (matchedTransferPatient) {
+      newIdx = idx.map(p => p.id === updated.id ? indexEntry(updated) : p);
+    } else {
+      newIdx = [...idx.filter(p => p.id !== updated.id), indexEntry(updated)];
+    }
+    await saveIndex(newIdx);
+    setPatients(newIdx);
+    setCurrentPatient(updated);
+    setCurrentId(updated.id);
+    setView("patient");
+    setPendingTransfer(null);
+  };
+
   if (view === "patient" && currentPatient) {
     return (
       <>
@@ -3820,6 +4051,7 @@ function App() {
         {showBoneAgePasteImport && <BoneAgePasteImport patient={currentPatient} onImport={handleBoneAgePasteImport} onCancel={() => setShowBoneAgePasteImport(false)} />}
         {showBoneAgeForm && <BoneAgeForm patient={currentPatient} initial={editingBoneAge} onSave={handleSaveBoneAge} onCancel={() => { setShowBoneAgeForm(false); setEditingBoneAge(null); }} />}
         {showTreatmentForm && <TreatmentForm patient={currentPatient} initial={editingTreatment} onSave={handleSaveTreatment} onCancel={() => { setShowTreatmentForm(false); setEditingTreatment(null); }} />}
+        {pendingTransfer && <SoapTransferModal transfer={pendingTransfer} matchedPatient={matchedTransferPatient} onConfirm={handleTransferConfirm} onDismiss={() => setPendingTransfer(null)} />}
       </>
     );
   }
@@ -3847,6 +4079,7 @@ function App() {
           setShowImportDialog(false);
         }} />
       )}
+      {pendingTransfer && <SoapTransferModal transfer={pendingTransfer} matchedPatient={matchedTransferPatient} onConfirm={handleTransferConfirm} onDismiss={() => setPendingTransfer(null)} />}
     </>
   );
 }
