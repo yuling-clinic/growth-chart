@@ -3927,40 +3927,60 @@ function App() {
     if (!motherH && t.motherH) motherH = t.motherH;
 
     let newMs = [...(patient.measurements || [])];
+    const SOAP_NOTE_MARK = "自 SOAP 產生器匯入";
 
     // Add today's measurement if there's any current-visit data
+    // If a SOAP-imported measurement already exists on the same date, REPLACE it (avoid duplicates on re-import).
+    // If a manually-entered measurement exists on the same date, skip to avoid overwriting user data.
     if (t.height || t.weight || t.boneAge != null) {
       const age = ageFromDates(t.birth, t.measureDate);
       if (age != null) {
         const bmi = (t.height && t.weight) ? t.weight / Math.pow(t.height / 100, 2) : null;
-        newMs.push({
-          id: uid(),
-          measureDate: t.measureDate,
-          age,
-          height: t.height ?? null,
-          weight: t.weight ?? null,
-          bmi,
-          boneAge: t.boneAge ?? null,
-          note: "自 SOAP 產生器匯入",
-          recordType: "followup",
-          createdAt: new Date().toISOString(),
-        });
+        const idx = newMs.findIndex(x => x.measureDate === t.measureDate);
+        const isFromSoap = idx >= 0 && (newMs[idx].note || "").includes(SOAP_NOTE_MARK);
+        if (idx >= 0 && isFromSoap) {
+          // Update existing SOAP-imported record on the same date
+          newMs[idx] = {
+            ...newMs[idx],
+            age,
+            height: t.height ?? null,
+            weight: t.weight ?? null,
+            bmi,
+            boneAge: t.boneAge ?? null,
+            note: SOAP_NOTE_MARK,
+          };
+        } else if (idx < 0) {
+          // No existing record on this date, add new
+          newMs.push({
+            id: uid(),
+            measureDate: t.measureDate,
+            age,
+            height: t.height ?? null,
+            weight: t.weight ?? null,
+            bmi,
+            boneAge: t.boneAge ?? null,
+            note: SOAP_NOTE_MARK,
+            recordType: "followup",
+            createdAt: new Date().toISOString(),
+          });
+        }
+        // else: existing manual record, skip
       }
     }
 
     // Add growth records from SOAP (semester-based history)
-    let addedGrowthCount = 0, skippedGrowthCount = 0;
     if (t.growthRecords && t.growthRecords.length > 0) {
       for (const g of t.growthRecords) {
-        // Parse semester like "小一上" → grade "小一", semester "上"
+        // Parse semester like "小一上" → grade label "小一", semester "上"
         const m = g.semester.match(/^(小一|小二|小三|小四|小五|小六|國一|國二|國三|高一|高二|高三|幼小|幼中|幼大|小班|中班|大班|幼兒園小班|幼兒園中班|幼兒園大班)(上|下)$/);
         if (!m) continue;
-        const grade = m[1], semester = m[2];
-        const info = ageFromGradeSemester(t.birth, grade, semester);
+        const gradeCode = GRADE_LABEL_MAP[m[1]];  // "小一" → "G1"
+        const semester = m[2];
+        if (!gradeCode) continue;
+        const info = ageFromGradeSemester(t.birth, gradeCode, semester);
         if (!info || info.age == null) continue;
         // Skip if a measurement already exists for this date (avoid duplicates on re-import)
-        const dup = newMs.some(x => x.measureDate === info.inferredDate);
-        if (dup) { skippedGrowthCount++; continue; }
+        if (newMs.some(x => x.measureDate === info.inferredDate)) continue;
         const bmi = (g.height && g.weight) ? g.weight / Math.pow(g.height / 100, 2) : null;
         newMs.push({
           id: uid(),
@@ -3970,32 +3990,35 @@ function App() {
           weight: g.weight ?? null,
           bmi,
           boneAge: null,
-          note: `${g.semester} (自 SOAP 產生器匯入)`,
+          note: `${g.semester} (${SOAP_NOTE_MARK})`,
           recordType: "followup",
           createdAt: new Date().toISOString(),
         });
-        addedGrowthCount++;
       }
     }
     newMs.sort((a, b) => a.age - b.age);
 
-    // Handle bone age
-    const newBoneAges = [...(patient.boneAges || [])];
+    // Handle bone age — same anti-duplicate logic
+    let newBoneAges = [...(patient.boneAges || [])];
     if (t.boneAge != null) {
-      // Find the just-added current-visit measurement
-      const todayMs = newMs.find(m => m.measureDate === t.measureDate && m.note === "自 SOAP 產生器匯入");
-      const chronoAge = todayMs ? todayMs.age : ageFromDates(t.birth, t.measureDate);
+      const baDate = t.boneAgeDate || t.measureDate;
+      // Find the just-added current-visit measurement (or fall back to matching by date)
+      const todayMs = newMs.find(m => m.measureDate === t.measureDate && (m.note || "").includes(SOAP_NOTE_MARK));
+      const chronoAge = todayMs ? todayMs.age : ageFromDates(t.birth, baDate);
       if (chronoAge != null) {
-        newBoneAges.push({
-          id: uid(),
-          measureDate: t.boneAgeDate || t.measureDate,
+        const baIdx = newBoneAges.findIndex(b => b.measureDate === baDate && (b.note || "").includes(SOAP_NOTE_MARK));
+        const baEntry = {
+          id: baIdx >= 0 ? newBoneAges[baIdx].id : uid(),
+          measureDate: baDate,
           chronoAge,
           boneAge: t.boneAge,
           linkedHeight: t.height ?? null,
-          note: "自 SOAP 產生器匯入",
+          note: SOAP_NOTE_MARK,
           linkedMeasurementId: todayMs ? todayMs.id : undefined,
-          createdAt: new Date().toISOString(),
-        });
+          createdAt: baIdx >= 0 ? newBoneAges[baIdx].createdAt : new Date().toISOString(),
+        };
+        if (baIdx >= 0) newBoneAges[baIdx] = baEntry;
+        else newBoneAges.push(baEntry);
         newBoneAges.sort((a, b) => a.chronoAge - b.chronoAge);
       }
     }
