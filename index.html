@@ -3732,6 +3732,12 @@ function SoapTransferModal({ transfer, matchedPatient, onConfirm, onDismiss }) {
                 )}
               </div>
             )}
+            {transfer.familyNote && (
+              <div className="col-span-2">
+                <span className="text-stone-500">家族史備註：</span>
+                <span className="whitespace-pre-wrap">{transfer.familyNote}</span>
+              </div>
+            )}
           </div>
           {(transfer.height || transfer.weight || transfer.boneAge != null) && (
             <div className="border-t border-stone-200 pt-2 mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
@@ -4083,6 +4089,14 @@ function App() {
     if (!fatherH && t.fatherH) fatherH = t.fatherH;
     if (!motherH && t.motherH) motherH = t.motherH;
 
+    // Family note: append new note if existing patient already has one and the new is different;
+    // otherwise set it. Avoid duplicating identical text.
+    let familyNote = patient.familyNote || "";
+    if (t.familyNote) {
+      if (!familyNote) familyNote = t.familyNote;
+      else if (!familyNote.includes(t.familyNote)) familyNote = familyNote + "\n" + t.familyNote;
+    }
+
     let newMs = [...(patient.measurements || [])];
     const SOAP_NOTE_MARK = "自 SOAP 產生器匯入";
 
@@ -4180,7 +4194,7 @@ function App() {
       }
     }
 
-    const updated = { ...patient, fatherH, motherH, measurements: newMs, boneAges: newBoneAges, lastVisit: t.measureDate };
+    const updated = { ...patient, fatherH, motherH, familyNote: familyNote || null, measurements: newMs, boneAges: newBoneAges, lastVisit: t.measureDate };
     await savePatient(updated);
     const idx = await loadIndex();
     let newIdx;
