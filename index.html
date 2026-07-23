@@ -367,6 +367,128 @@ function bmiCategory(bmi, ref) {
   return { label: "肥胖", color: "#dc2626" };
 }
 
+// ── BMI percentile computation (Taiwan reference; adapted from SOAP generator) ──
+const BMIPCT_Z = [-1.6449, -1.0364, 0, 1.0364, 1.6449]; // P5, P15, P50, P85, P95
+const BMI_PCT_REF = {
+  boy: {
+    ages: [24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186, 192, 198, 204, 210, 216, 222],
+    v: [[14.2, 14.8, 16.0, 17.4, 18.3], [13.9, 14.6, 15.8, 17.2, 18.0], [13.7, 14.4, 15.6, 17.0, 17.8], [13.6, 14.2, 15.4, 16.8, 17.7], [13.4, 14.1, 15.3, 16.7, 17.6], [13.3, 14.0, 15.3, 16.7, 17.6], [13.3, 13.9, 15.2, 16.7, 17.7], [13.4, 14.0, 15.3, 16.7, 18.0], [13.5, 14.2, 15.4, 16.9, 18.5], [13.6, 14.3, 15.7, 17.3, 19.2], [13.8, 14.5, 15.9, 17.9, 20.3], [14.0, 14.7, 16.1, 18.6, 21.2], [14.1, 14.9, 16.3, 19.0, 21.6], [14.2, 15.0, 16.5, 19.3, 22.0], [14.3, 15.1, 16.7, 19.5, 22.3], [14.4, 15.2, 16.8, 19.7, 22.5], [14.5, 15.3, 17.0, 20.0, 22.7], [14.6, 15.4, 17.1, 20.3, 22.9], [14.8, 15.6, 17.4, 20.7, 23.2], [15.0, 15.8, 17.7, 21.0, 23.5], [15.2, 16.1, 18.0, 21.3, 23.9], [15.4, 16.4, 18.3, 21.5, 24.2], [15.7, 16.7, 18.7, 21.9, 24.5], [16.0, 17.0, 19.1, 22.2, 24.8], [16.3, 17.3, 19.4, 22.5, 25.0], [16.6, 17.6, 19.7, 22.7, 25.2], [16.9, 17.9, 20.0, 22.9, 25.4], [17.2, 18.2, 20.3, 23.1, 25.5], [17.4, 18.4, 20.5, 23.3, 25.6], [17.6, 18.6, 20.7, 23.4, 25.6], [17.8, 18.8, 20.9, 23.5, 25.6], [18.0, 19.0, 21.0, 23.6, 25.6], [18.1, 19.1, 21.1, 23.7, 25.6], [18.2, 19.2, 21.2, 23.7, 25.6]],
+  },
+  girl: {
+    ages: [24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186, 192, 198, 204, 210, 216, 222],
+    v: [[13.7, 14.4, 15.7, 17.2, 18.1], [13.6, 14.3, 15.5, 17.0, 17.9], [13.5, 14.1, 15.4, 16.9, 17.8], [13.3, 14.0, 15.3, 16.8, 17.8], [13.2, 13.9, 15.3, 16.8, 17.9], [13.1, 13.9, 15.3, 16.9, 18.0], [13.1, 13.8, 15.3, 17.0, 18.1], [13.1, 13.8, 15.3, 17.0, 18.3], [13.1, 13.8, 15.3, 17.2, 18.8], [13.2, 13.9, 15.4, 17.5, 19.2], [13.4, 14.1, 15.6, 17.7, 19.6], [13.7, 14.4, 15.8, 18.0, 20.3], [13.8, 14.5, 16.0, 18.4, 20.7], [13.9, 14.6, 16.1, 18.8, 21.0], [14.0, 14.8, 16.3, 19.1, 21.3], [14.1, 14.9, 16.5, 19.3, 21.6], [14.3, 15.1, 16.8, 19.7, 22.0], [14.4, 15.2, 17.1, 20.1, 22.3], [14.7, 15.5, 17.5, 20.5, 22.7], [14.9, 15.8, 17.9, 20.9, 23.1], [15.2, 16.1, 18.3, 21.3, 23.5], [15.4, 16.4, 18.6, 21.6, 23.9], [15.7, 16.7, 19.0, 21.9, 24.3], [16.0, 17.0, 19.3, 22.2, 24.6], [16.3, 17.3, 19.6, 22.5, 24.9], [16.5, 17.6, 19.8, 22.7, 25.1], [16.7, 17.8, 19.9, 22.7, 25.2], [16.9, 18.0, 20.0, 22.7, 25.3], [17.1, 18.1, 20.0, 22.7, 25.3], [17.2, 18.2, 20.0, 22.7, 25.3], [17.3, 18.3, 20.0, 22.7, 25.3], [17.3, 18.3, 20.0, 22.7, 25.3], [17.3, 18.3, 20.1, 22.7, 25.3], [17.3, 18.3, 20.1, 22.7, 25.3]],
+  }
+};
+function _erf(x) { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+function _normCdf(z) { return 0.5 * (1 + _erf(z / Math.SQRT2)); }
+function bmiPercentile(sex, ageYears, bmi) {
+  if (!bmi || ageYears == null) return null;
+  const g = BMI_PCT_REF[sex];
+  const ageMo = ageYears * 12;
+  if (ageMo < g.ages[0]) return null;
+  const ages = g.ages, rows = g.v;
+  let interpRow;
+  if (ageMo <= ages[0]) interpRow = rows[0];
+  else if (ageMo >= ages[ages.length - 1]) interpRow = rows[rows.length - 1];
+  else {
+    let i = 0; while (ages[i + 1] < ageMo) i++;
+    const f = (ageMo - ages[i]) / (ages[i + 1] - ages[i]);
+    interpRow = rows[i].map((v, j) => v + (rows[i + 1][j] - v) * f);
+  }
+  const zs = BMIPCT_Z, n = interpRow.length;
+  let z;
+  if (bmi <= interpRow[0]) { const s = (zs[1] - zs[0]) / (interpRow[1] - interpRow[0]); z = zs[0] + (bmi - interpRow[0]) * s; }
+  else if (bmi >= interpRow[n - 1]) { const s = (zs[n - 1] - zs[n - 2]) / (interpRow[n - 1] - interpRow[n - 2]); z = zs[n - 1] + (bmi - interpRow[n - 1]) * s; }
+  else {
+    let i = 0; while (interpRow[i + 1] < bmi) i++;
+    const f = (bmi - interpRow[i]) / (interpRow[i + 1] - interpRow[i]);
+    z = zs[i] + (zs[i + 1] - zs[i]) * f;
+  }
+  return _normCdf(z) * 100;
+}
+
+// ── Bone age SD reference by chronological age & sex ──
+const BA_SD_TABLE = {
+  boy: [[1, 2.1], [1.5, 2.7], [2, 4], [2.5, 5.4], [3, 6], [3.5, 6.6], [4, 7], [4.5, 7.8], [5, 8.4], [5.5, 9.1], [6, 9.3], [7, 10.1], [8, 10.8], [9, 11], [10, 11.4], [11, 10.5], [12, 10.4], [13, 11.1], [14, 12], [15, 14.2], [16, 15.1], [17, 15.4]],
+  girl: [[1, 2.7], [1.5, 3.4], [2, 4], [2.5, 4.8], [3, 5.6], [3.5, 6.5], [4, 7.2], [4.5, 8], [5, 8.6], [5.5, 8.9], [6, 9], [7, 8.3], [8, 8.8], [9, 9.3], [10, 10.8], [11, 12.3], [12, 14], [13, 14.6], [14, 12.6], [15, 11.2]],
+};
+function baSDForAge(sex, ageYears) {
+  const tbl = BA_SD_TABLE[sex];
+  if (!tbl || ageYears == null || isNaN(ageYears)) return null;
+  if (ageYears <= tbl[0][0]) return tbl[0][1];
+  if (ageYears >= tbl[tbl.length - 1][0]) return tbl[tbl.length - 1][1];
+  let i = 0; while (tbl[i + 1][0] < ageYears) i++;
+  const [a0, v0] = tbl[i], [a1, v1] = tbl[i + 1];
+  return v0 + (v1 - v0) * ((ageYears - a0) / (a1 - a0));
+}
+
+// Convert decimal years to "AyBm" format (rounded to nearest month)
+function decimalYearsToYm(ageYears) {
+  if (ageYears == null || isNaN(ageYears)) return "";
+  const totalMonths = Math.round(ageYears * 12);
+  const y = Math.floor(totalMonths / 12);
+  const m = totalMonths % 12;
+  return m === 0 ? `${y}y` : `${y}y${m}m`;
+}
+
+// Round percentile for display (per SOAP convention: <1 for <1%, >99 for >99%)
+function pctForOrderText(p) {
+  if (p == null || isNaN(p)) return "—";
+  if (p < 1) return "<1";
+  if (p > 99) return ">99";
+  return String(Math.round(p));
+}
+
+// Generate order text for a measurement (BH/BW/BMI + optional bone age line)
+function generateOrderText(patient, height, weight, bmi, ageYears, boneAgeDecimal, boneAgeDateISO) {
+  const ref = ageYears != null ? refAt(ageYears, patient.sex) : null;
+  const hPct = height && ref ? percentileFromRef(height, ref, "h") : null;
+  const wPct = weight && ref ? percentileFromRef(weight, ref, "w") : null;
+  const bmiP = bmi && ageYears != null ? bmiPercentile(patient.sex, ageYears, bmi) : null;
+
+  const parts = [];
+  if (height) parts.push(`BH ${fmt(height, 1)}${hPct != null ? ` (P${pctForOrderText(hPct)})` : ""}`);
+  if (weight) parts.push(`BW ${fmt(weight, 1)}${wPct != null ? ` (P${pctForOrderText(wPct)})` : ""}`);
+  if (bmi) parts.push(`BMI ${fmt(bmi, 2)}${bmiP != null ? ` (P${pctForOrderText(bmiP)})` : ""}`);
+
+  const lines = [];
+  if (parts.length) lines.push(parts.join(", "));
+
+  if (boneAgeDecimal != null && !isNaN(boneAgeDecimal)) {
+    const baStr = decimalYearsToYm(boneAgeDecimal);
+    const caStr = ageYears != null ? decimalYearsToYm(ageYears) : "";
+    const sd = ageYears != null ? baSDForAge(patient.sex, ageYears) : null;
+    const sdStr = sd != null ? sd.toFixed(1) : "";
+    // Compact date format for the parenthesized label (yyyymmdd)
+    let dateLabel = "";
+    if (boneAgeDateISO) {
+      dateLabel = boneAgeDateISO.replace(/-/g, "");
+    }
+    lines.push(`Bone age(${dateLabel}): ${baStr} (CA ${caStr}${sdStr ? ` SD ${sdStr}` : ""}) PAH  ()`);
+  }
+  return lines.join("\n");
+}
+
+// Copy text to clipboard, with graceful fallback
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch { return false; }
+  }
+}
+
 // Bayley-Pinneau category determination
 function bpCategory(boneAge, chronoAge) {
   if (boneAge == null || chronoAge == null) return null;
@@ -1293,6 +1415,7 @@ function PatientForm({ initial, onSave, onCancel }) {
   const [sex, setSex] = useState(initial?.sex || "boy");
   const [fatherH, setFatherH] = useState(initial?.fatherH ?? "");
   const [motherH, setMotherH] = useState(initial?.motherH ?? "");
+  const [familyNote, setFamilyNote] = useState(initial?.familyNote ?? "");
 
   const handleParse = () => {
     const r = parsePatientText(pasteText);
@@ -1324,6 +1447,7 @@ function PatientForm({ initial, onSave, onCancel }) {
       name: name.trim(), chartNo: chartNo.trim(), birth, sex,
       fatherH: parseFloat(fatherH) || null,
       motherH: parseFloat(motherH) || null,
+      familyNote: familyNote.trim() || null,
     });
   };
 
@@ -1377,6 +1501,11 @@ function PatientForm({ initial, onSave, onCancel }) {
               <input type="number" step="0.1" value={motherH} onChange={e => setMotherH(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900" />
             </Field>
           </div>
+          <Field label="家族史備註 (選填)" hint="可自由填寫，例如媽媽 menarche 12y、父母有相關病史等">
+            <textarea value={familyNote} onChange={e => setFamilyNote(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900 resize-y" />
+          </Field>
           {target && (
             <div className="text-sm bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-emerald-900">
               <div className="font-medium">Target Height (標的身高)</div>
@@ -1617,9 +1746,46 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
           )}
         </div>
         <Field label="備註 (選填)"><input value={note} onChange={e => setNote(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900" /></Field>
+        {recordType === "followup" && (parseFloat(height) || parseFloat(weight)) && computed.age != null && (() => {
+          const h = parseFloat(height), w = parseFloat(weight);
+          const bmiVal = (h && w) ? w / Math.pow(h / 100, 2) : null;
+          const baDec = parseFloat(boneAge) || null;
+          // Use the measurement date (or grade-inferred date) as bone age date
+          const baDateISO = mode === "date" ? measureDate : computed.dateUsed;
+          const orderText = generateOrderText(patient, h || null, w || null, bmiVal, computed.age, baDec, baDateISO);
+          return orderText ? (
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-medium text-teal-800">📋 醫囑文字預覽</div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const ok = await copyToClipboard(orderText);
+                    if (!ok) alert("複製失敗，請手動選取複製");
+                  }}
+                  className="text-xs px-2 py-1 bg-teal-700 text-white rounded hover:bg-teal-800"
+                >複製</button>
+              </div>
+              <pre className="text-xs font-mono text-stone-800 whitespace-pre-wrap select-all bg-white rounded p-2 border border-teal-100">{orderText}</pre>
+            </div>
+          ) : null;
+        })()}
       </div>
       <div className="px-6 py-4 border-t border-stone-200 flex justify-end gap-2 sticky bottom-0 bg-white z-10">
         <button onClick={onCancel} className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg">取消</button>
+        {recordType === "followup" && (parseFloat(height) || parseFloat(weight)) && computed.age != null && (() => {
+          const h = parseFloat(height), w = parseFloat(weight);
+          const bmiVal = (h && w) ? w / Math.pow(h / 100, 2) : null;
+          const baDec = parseFloat(boneAge) || null;
+          const baDateISO = mode === "date" ? measureDate : computed.dateUsed;
+          const orderText = generateOrderText(patient, h || null, w || null, bmiVal, computed.age, baDec, baDateISO);
+          return orderText ? (
+            <button onClick={async () => {
+              await copyToClipboard(orderText);
+              submit();
+            }} className="px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800">複製醫囑並儲存</button>
+          ) : null;
+        })()}
         <button onClick={submit} className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800">儲存</button>
       </div>
     </Modal>
@@ -2583,7 +2749,6 @@ function PrintView({ patient, onClose }) {
                 <th style={{ ...thStyle, textAlign: "right" }}>體重%</th>
                 <th style={{ ...thStyle, textAlign: "center" }}>BMI</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>骨齡</th>
-                <th style={thStyle}>治療 / 備註</th>
               </tr>
             </thead>
             <tbody>
@@ -2593,11 +2758,6 @@ function PrintView({ patient, onClose }) {
                 const ph = r ? percentileFromRef(m.height, r, "h") : null;
                 const pw = r ? percentileFromRef(m.weight, r, "w") : null;
                 const cat = br ? bmiCategory(m.bmi, br) : null;
-                const txText = txs.map(t => {
-                  const cleanNote = t.note && !t.note.startsWith("（由測量紀錄") ? t.note : "";
-                  return `${t.drug}${cleanNote ? `(${cleanNote})` : ""}`;
-                }).join(", ");
-                const noteText = [m.note, txText].filter(Boolean).join("; ");
                 return (
                   <tr key={m.id} style={{ borderBottom: "1px solid #f5f5f4" }}>
                     <td style={tdStyle}>{m.measureDate}</td>
@@ -2609,21 +2769,12 @@ function PrintView({ patient, onClose }) {
                     <td style={{ ...tdStyle, textAlign: "right" }}>{pw != null ? fmt(pw, 0) + "%" : "—"}</td>
                     <td style={{ ...tdStyle, textAlign: "center", color: cat?.color || "#78716c" }}>{cat?.label || "—"}</td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>{m.boneAge ? fmt(m.boneAge, 1) : "—"}</td>
-                    <td style={{ ...tdStyle, color: txText ? "#0c4a6e" : "#78716c" }}>{noteText || "—"}</td>
                   </tr>
                 );
               })}
-              {orphanTreatments.map(t => (
-                <tr key={t.id} style={{ borderBottom: "1px solid #f5f5f4", background: "#eff6ff" }}>
-                  <td style={tdStyle}>{t.startDate}</td>
-                  <td style={tdStyle}>{t.startAge != null ? ageToYM(t.startAge) : "—"}</td>
-                  <td colSpan={7} style={{ ...tdStyle, color: "#78716c", fontStyle: "italic" }}>—</td>
-                  <td style={{ ...tdStyle, color: "#0c4a6e" }}>開始 {t.drug}{t.note && !t.note.startsWith("（由測量紀錄") ? ` (${t.note})` : ""}</td>
-                </tr>
-              ))}
             </tbody>
           </table>
-          {timeline.length === 0 && orphanTreatments.length === 0 && (
+          {timeline.length === 0 && (
             <div style={{ textAlign: "center", padding: "12px 0", fontSize: 9, color: "#78716c" }}>尚無紀錄</div>
           )}
         </div>
@@ -3076,6 +3227,12 @@ function PatientView({ patient, patients, onBack, onSwitchPatient, onNewPatient,
               </div>
             ) : <div className="md:col-span-2"></div>}
           </div>
+          {patient.familyNote && (
+            <div className="mt-3 pt-3 border-t border-stone-100">
+              <div className="text-xs text-stone-500 uppercase tracking-wider mb-1">家族史備註</div>
+              <div className="text-sm text-stone-700 whitespace-pre-wrap">{patient.familyNote}</div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 print:hidden flex-wrap">
