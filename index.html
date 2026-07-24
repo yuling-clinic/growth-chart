@@ -459,12 +459,12 @@ function generateOrderText(patient, height, weight, bmi, ageYears, boneAgeDecima
     const caStr = ageYears != null ? decimalYearsToYm(ageYears) : "";
     const sd = ageYears != null ? baSDForAge(patient.sex, ageYears) : null;
     const sdStr = sd != null ? sd.toFixed(1) : "";
-    // Compact date format for the parenthesized label (yyyymmdd)
+    // ISO date format for the parenthesized label (yyyy-mm-dd)
     let dateLabel = "";
     if (boneAgeDateISO) {
-      dateLabel = boneAgeDateISO.replace(/-/g, "");
+      dateLabel = boneAgeDateISO;  // already ISO format
     }
-    lines.push(`Bone age(${dateLabel}): ${baStr} (CA ${caStr}${sdStr ? ` SD ${sdStr}` : ""}) PAH  ()`);
+    lines.push(`Bone age (${dateLabel}): ${baStr} (CA ${caStr}${sdStr ? ` SD ${sdStr}` : ""}) PAH  ()`);
   }
   return lines.join("\n");
 }
@@ -4161,8 +4161,8 @@ function App() {
           weight: g.weight ?? null,
           bmi,
           boneAge: null,
-          note: `${g.semester} (${SOAP_NOTE_MARK})`,
-          recordType: "followup",
+          note: g.semester,
+          recordType: "initial",
           createdAt: new Date().toISOString(),
         });
       }
