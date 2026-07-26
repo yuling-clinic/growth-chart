@@ -687,7 +687,7 @@ function parsePastedData(text, birthISO) {
     if (tokens.length < 2) continue;
 
     // Try to identify each token's role
-    let dateToken = null, gradeToken = null, semesterToken = null;
+    let dateToken = null, gradeToken = null, semesterToken = null, ageToken = null;
     let height = null, weight = null;
     const numbers = [];
 
@@ -732,6 +732,18 @@ function parsePastedData(text, birthISO) {
       }
       // Pure 上/下 standalone
       if (tok === "上" || tok === "下") { semesterToken = tok; continue; }
+      // Age token like "1y6m", "2y", "10y3m" (case-insensitive)
+      const ageM = tok.match(/^(\d+)y(?:(\d+)m)?$/i);
+      if (ageM) {
+        ageToken = { years: parseInt(ageM[1]), months: ageM[2] ? parseInt(ageM[2]) : 0 };
+        continue;
+      }
+      // Standalone months like "6m" (rare)
+      const monthsM = tok.match(/^(\d+)m$/i);
+      if (monthsM) {
+        ageToken = { years: 0, months: parseInt(monthsM[1]) };
+        continue;
+      }
       // Number?
       const num = parseFloat(tok);
       if (!isNaN(num)) numbers.push(num);
@@ -781,6 +793,18 @@ function parsePastedData(text, birthISO) {
       }
       rows.push({
         mode: "date", measureDate: dateISO,
+        height, weight,
+        rawLine: line,
+      });
+    } else if (ageToken) {
+      // Compute measurement date from birth + age
+      const b = new Date(birthISO);
+      b.setFullYear(b.getFullYear() + ageToken.years);
+      b.setMonth(b.getMonth() + ageToken.months);
+      const dateISO = b.toISOString().slice(0, 10);
+      rows.push({
+        mode: "age", measureDate: dateISO,
+        ageLabel: ageToken.years > 0 ? `${ageToken.years}y${ageToken.months ? ageToken.months + "m" : ""}` : `${ageToken.months}m`,
         height, weight,
         rawLine: line,
       });
@@ -1917,6 +1941,7 @@ function PasteImport({ patient, onImport, onCancel }) {
           <ul className="space-y-0.5 list-disc list-inside">
             <li>「年級+學期 身高 體重」例如：<code className="bg-white px-1 rounded">小一上 115.9 23.0</code></li>
             <li>「日期 身高 體重」例如：<code className="bg-white px-1 rounded">2024-05-15 115.9 23.0</code></li>
+            <li>「年齡 身高 體重」例如：<code className="bg-white px-1 rounded">1y6m 77.7 9.6</code>（依據病人生日換算日期）</li>
             <li>支援西元/民國年（民國年自動轉換）</li>
             <li>日期可用 <code className="bg-white px-1 rounded">/</code>、<code className="bg-white px-1 rounded">-</code>、<code className="bg-white px-1 rounded">.</code> 分隔，或純數字如 <code className="bg-white px-1 rounded">20260101</code>、<code className="bg-white px-1 rounded">1150101</code></li>
             <li>身高、體重可只填其中一項</li>
@@ -2308,13 +2333,21 @@ function PercentileChart({ title, unit, sex, metric, measurements, ageRange, tre
               const visible = (treatments || []).filter(t => t.startAge >= ageRange[0] && t.startAge <= ageRange[1]);
               // Group by rounded startAge (tolerance ~1 month) and assign stack index
               const sorted = visible.slice().sort((a, b) => (a.startAge || 0) - (b.startAge || 0) || (a.createdAt || "").localeCompare(b.createdAt || ""));
+              // Cluster treatments whose startAge is within 1 year of a prior treatment in the same cluster,
+              // so labels stack vertically to avoid overlap.
+              const PROXIMITY_YEARS = 1.0;
               const stackIdx = new Map();
-              const groupKey = (age) => Math.round(age * 12); // group by month resolution
-              const counters = {};
+              let clusterAnchor = -Infinity;
+              let clusterCount = 0;
               for (const t of sorted) {
-                const k = groupKey(t.startAge);
-                counters[k] = (counters[k] || 0) + 1;
-                stackIdx.set(t.id, counters[k] - 1);
+                if (t.startAge - clusterAnchor < PROXIMITY_YEARS) {
+                  stackIdx.set(t.id, clusterCount);
+                  clusterCount++;
+                } else {
+                  stackIdx.set(t.id, 0);
+                  clusterCount = 1;
+                  clusterAnchor = t.startAge;
+                }
               }
               const lineHeight = large ? 14 : 12;
               return sorted.map(t => (
@@ -2473,13 +2506,21 @@ function BmiChart({ sex, measurements, ageRange, treatments, large }) {
             {(() => {
               const visible = (treatments || []).filter(t => t.startAge >= ageMin && t.startAge <= ageMax);
               const sorted = visible.slice().sort((a, b) => (a.startAge || 0) - (b.startAge || 0) || (a.createdAt || "").localeCompare(b.createdAt || ""));
+              // Cluster treatments whose startAge is within 1 year of a prior treatment in the same cluster,
+              // so labels stack vertically to avoid overlap.
+              const PROXIMITY_YEARS = 1.0;
               const stackIdx = new Map();
-              const groupKey = (age) => Math.round(age * 12);
-              const counters = {};
+              let clusterAnchor = -Infinity;
+              let clusterCount = 0;
               for (const t of sorted) {
-                const k = groupKey(t.startAge);
-                counters[k] = (counters[k] || 0) + 1;
-                stackIdx.set(t.id, counters[k] - 1);
+                if (t.startAge - clusterAnchor < PROXIMITY_YEARS) {
+                  stackIdx.set(t.id, clusterCount);
+                  clusterCount++;
+                } else {
+                  stackIdx.set(t.id, 0);
+                  clusterCount = 1;
+                  clusterAnchor = t.startAge;
+                }
               }
               const lineHeight = large ? 14 : 12;
               return sorted.map(t => (
