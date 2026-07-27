@@ -1525,7 +1525,7 @@ function PatientForm({ initial, onSave, onCancel }) {
               <input type="number" step="0.1" value={motherH} onChange={e => setMotherH(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900" />
             </Field>
           </div>
-          <Field label="家族史備註 (選填)" hint="可自由填寫，例如媽媽 menarche 12y、父母有相關病史等">
+          <Field label="備註 (選填)" hint="可自由填寫，例如媽媽 menarche 12y、父母有相關病史、觀察重點等">
             <textarea value={familyNote} onChange={e => setFamilyNote(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900 resize-y" />
@@ -3270,7 +3270,7 @@ function PatientView({ patient, patients, onBack, onSwitchPatient, onNewPatient,
           </div>
           {patient.familyNote && (
             <div className="mt-3 pt-3 border-t border-stone-100">
-              <div className="text-xs text-stone-500 uppercase tracking-wider mb-1">家族史備註</div>
+              <div className="text-xs text-stone-500 uppercase tracking-wider mb-1">備註</div>
               <div className="text-sm text-stone-700 whitespace-pre-wrap">{patient.familyNote}</div>
             </div>
           )}
@@ -3775,7 +3775,7 @@ function SoapTransferModal({ transfer, matchedPatient, onConfirm, onDismiss }) {
             )}
             {transfer.familyNote && (
               <div className="col-span-2">
-                <span className="text-stone-500">家族史備註：</span>
+                <span className="text-stone-500">備註：</span>
                 <span className="whitespace-pre-wrap">{transfer.familyNote}</span>
               </div>
             )}
