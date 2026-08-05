@@ -211,13 +211,23 @@ const TX_PRESETS = [
 const TX_OTHER_COLOR = "#475569";
 
 // =================== Helpers ===================
+// Age convention: count elapsed calendar months only — the day of month is ignored.
+// e.g. born 2014-03-xx, measured 2026-08-xx → 149 mo → 12.4167 y → "12y 5m"
+// Reads year/month straight off the ISO string so the result never shifts with timezone.
+function _yearMonthOf(v) {
+  if (v instanceof Date) return { y: v.getUTCFullYear(), m: v.getUTCMonth() + 1 };
+  const iso = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return { y: +iso[1], m: +iso[2] };
+  const d = new Date(v);
+  return isNaN(d) ? null : { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
+}
 function ageFromDates(birth, measure) {
   if (!birth || !measure) return null;
-  const b = new Date(birth), m = new Date(measure);
-  if (isNaN(b) || isNaN(m)) return null;
-  const ms = m - b;
-  if (ms < 0) return null;
-  return ms / (365.2425 * 24 * 3600 * 1000);
+  const b = _yearMonthOf(birth), m = _yearMonthOf(measure);
+  if (!b || !m) return null;
+  const months = (m.y - b.y) * 12 + (m.m - b.m);
+  if (months < 0) return null;
+  return months / 12;
 }
 
 function ageFromGradeSemester(birthISO, gradeLabel, semester) {
@@ -3255,7 +3265,7 @@ function PatientView({ patient, patients, onBack, onSwitchPatient, onNewPatient,
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <Stat label="病歷號" value={patient.chartNo || "—"} />
             <Stat label="出生日期" value={patient.birth} />
-            <Stat label="目前年齡" value={`${fmt(ageFromDates(patient.birth, todayISO()), 2)} 歲`} />
+            <Stat label="目前年齡" value={ageToYM(ageFromDates(patient.birth, todayISO()))} />
             <Stat label="紀錄筆數" value={`${measurements.length} 筆`} />
             <Stat label="父親身高" value={patient.fatherH ? `${fmt(patient.fatherH, 1)} cm` : "—"} />
             <Stat label="母親身高" value={patient.motherH ? `${fmt(patient.motherH, 1)} cm` : "—"} />
