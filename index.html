@@ -1780,7 +1780,7 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
           )}
         </div>
         <Field label="備註 (選填)"><input value={note} onChange={e => setNote(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900" /></Field>
-        {recordType === "followup" && (parseFloat(height) || parseFloat(weight)) && computed.age != null && (() => {
+        {recordType === "followup" && (Number.isFinite(parseFloat(height)) || Number.isFinite(parseFloat(weight))) && computed.age != null && (() => {
           const h = parseFloat(height), w = parseFloat(weight);
           const bmiVal = (h && w) ? w / Math.pow(h / 100, 2) : null;
           const baDec = parseFloat(boneAge) || null;
@@ -1807,7 +1807,7 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
       </div>
       <div className="px-6 py-4 border-t border-stone-200 flex justify-end gap-2 sticky bottom-0 bg-white z-10">
         <button onClick={onCancel} className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg">取消</button>
-        {recordType === "followup" && (parseFloat(height) || parseFloat(weight)) && computed.age != null && (() => {
+        {recordType === "followup" && (Number.isFinite(parseFloat(height)) || Number.isFinite(parseFloat(weight))) && computed.age != null && (() => {
           const h = parseFloat(height), w = parseFloat(weight);
           const bmiVal = (h && w) ? w / Math.pow(h / 100, 2) : null;
           const baDec = parseFloat(boneAge) || null;
@@ -2909,7 +2909,7 @@ function parseBoneAgeLine(line) {
   const clean = beforeCA.replace(/^~\s*/, "").trim();
 
   // Range with optional (V) markers
-  const rangeMatch = clean.match(/^(\d+y(?:\d+m)?)(\(V\))?\s*-\s*(\d+y(?:\d+m)?)(\(V\))?/i);
+  const rangeMatch = clean.match(/^(\d+y(?:\d+m)?)\s*(\(V\)|（V）|\*|＊)?\s*[-–—]\s*(\d+y(?:\d+m)?)\s*(\(V\)|（V）|\*|＊)?/i);
   if (rangeMatch) {
     const left = parseYm(rangeMatch[1]);
     const right = parseYm(rangeMatch[3]);
