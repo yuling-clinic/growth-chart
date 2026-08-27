@@ -146,6 +146,17 @@
     </div>
 
     <div class="card">
+      <h2>家族史 <span class="cn">Family history</span></h2>
+      <div class="body">
+        <div class="row"><span class="lead">Father</span><input type="text" data-f="fa_ht" class="w4"><span class="unit">cm</span><input type="text" data-f="fa_ht_note" placeholder="註（如 delayed puberty）" style="flex:1;margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:12px"><div class="chips" data-group="fa" style="margin-left:4px"></div></div>
+        <div class="row"><span class="lead">Mother</span><input type="text" data-f="mo_ht" class="w4"><span class="unit">cm</span><span class="lead" style="margin-left:6px">menarche at</span><input type="text" data-f="mo_men" class="w3"><span class="unit">y</span><input type="text" data-f="mo_ht_note" placeholder="註" style="flex:1;margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:12px"></div>
+        <div class="row"><span class="lead">Target height</span><input type="text" data-f="th" class="w4" placeholder="auto"><span class="unit">cm</span><span class="calc" id="thCalc"></span></div>
+        <div class="row" style="align-items:flex-start"><span class="lead" style="padding-top:6px">備註</span><textarea data-f="fa_note" rows="2" placeholder="自由填寫的備註（會出現在 S · Subjective 末尾，方便一起複製到病歷）" style="flex:1;padding:5px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;min-height:32px"></textarea></div>
+        <div class="row" data-tplonly="obesity"><div class="chips" data-group="fhx_ob"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>主訴 <span class="cn">Chief complaint</span></h2>
       <div class="body">
         <div class="row">
@@ -226,20 +237,15 @@
     </div>
 
     <div class="card">
-      <h2>家族史 <span class="cn">Family history</span></h2>
-      <div class="body">
-        <div class="row"><span class="lead">Father</span><input type="text" data-f="fa_ht" class="w4"><span class="unit">cm</span><input type="text" data-f="fa_ht_note" placeholder="註（如 delayed puberty）" style="flex:1;margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:12px"><div class="chips" data-group="fa" style="margin-left:4px"></div></div>
-        <div class="row"><span class="lead">Mother</span><input type="text" data-f="mo_ht" class="w4"><span class="unit">cm</span><span class="lead" style="margin-left:6px">menarche at</span><input type="text" data-f="mo_men" class="w3"><span class="unit">y</span><input type="text" data-f="mo_ht_note" placeholder="註" style="flex:1;margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:12px"></div>
-        <div class="row"><span class="lead">Target height</span><input type="text" data-f="th" class="w4" placeholder="auto"><span class="unit">cm</span><span class="calc" id="thCalc"></span></div>
-        <div class="row" style="align-items:flex-start"><span class="lead" style="padding-top:6px">備註</span><textarea data-f="fa_note" rows="2" placeholder="自由填寫的備註（會出現在 S · Subjective 末尾，方便一起複製到病歷）" style="flex:1;padding:5px 8px;border:1px solid #d6d3d1;border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;min-height:32px"></textarea></div>
-        <div class="row" data-tplonly="obesity"><div class="chips" data-group="fhx_ob"></div></div>
-      </div>
-    </div>
-
-    <div class="card">
       <h2>理學檢查 <span class="cn">Physical exam</span></h2>
       <div class="body">
-        <div class="hint" style="margin-top:0;margin-bottom:10px">HEENT / Thyroid / Chest / Heart / Abdomen / Ext 為固定正常敘述，異常時直接改右側輸出。</div>
+        <div class="row" style="margin-bottom:6px">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="generalPeOn" checked style="cursor:pointer">
+            <span>一般 PE 正常敘述</span>
+          </label>
+          <span class="hint" style="margin:0">HEENT / Chest / Heart / Abdomen / Ext；取消勾選則不寫入病歷（Thyroid、Skin 不受影響）</span>
+        </div>
         <div class="subhead">Skin（＋可加備註）</div>
         <div class="row"><div class="chips" data-group="skin"></div></div>
         <div class="row" data-tplonly="obesity"><div class="chips" data-group="skin_ob"></div></div>
@@ -400,7 +406,7 @@ const FIND={
   dysmorphic:[["syndromic","Syndromic face"],["triangular","Triangular face"],["lowear","Low-set ear"],["lowhair","Low hair line"],["higharch","High-arched palate"],["webneck","Web neck"],["carryangle","Wide-carrying angle"],["incurved","Incurved 5th finger"],["asymmetry","Asymmetry of limbs"],["downslant","downward slant"],["edema","edema"]],
   ax:[["ax","Axillary hair"]],fa:[["fa_delay","delayed puberty"]],
 };
-const NOTE_GROUPS={drug_pp:true,drug_ss:true,skin:true};
+const NOTE_GROUPS={drug_pp:true,drug_ss:true,skin:true,pp_cc:true,ss_cc:true,gi:true};
 const SYSDZ_TAGS=["asthma","allergic rhinitis","atopic dermatitis","ADHD"];
 const SEMS_KG=["幼小上","幼小下","幼中上","幼中下","幼大上","幼大下"];
 const SEMS_ELEM=["小一上","小一下","小二上","小二下","小三上","小三下","小四上","小四下","小五上","小五下","小六上","小六下"];
@@ -408,7 +414,7 @@ const SEMS_JUNIOR=["國一上","國一下","國二上","國二下","國三上","
 // Canonical order (used for reading values back out); the on-screen columns are laid out separately
 const SEMS=[...SEMS_KG,...SEMS_ELEM,...SEMS_JUNIOR];
 
-const S={tpl:"growth",sex:"f",find:{},note:{},txt:{},tags:new Set(),growth:{},dysmorphicOn:false,twinOn:false,pubertyOn:true,
+const S={tpl:"growth",sex:"f",find:{},note:{},txt:{},tags:new Set(),growth:{},dysmorphicOn:false,twinOn:false,pubertyOn:true,generalPeOn:true,
   seg:{delivery:"NSD",dms:"",breastside:"",twin:"A"},
   tanner:{breast:"I",pubic:"I"}};
 const CC_DEFAULT="";
@@ -509,17 +515,19 @@ document.getElementById("tplSeg").addEventListener("click",e=>{
 });
 document.getElementById("dysmorphicOn").addEventListener("change",e=>{S.dysmorphicOn=e.target.checked;render();});
 document.getElementById("pubertyOn").addEventListener("change",e=>{S.pubertyOn=e.target.checked;render();});
+document.getElementById("generalPeOn").addEventListener("change",e=>{S.generalPeOn=e.target.checked;render();});
 document.getElementById("twinOn").addEventListener("change",e=>{S.twinOn=e.target.checked;render();});
 document.querySelectorAll(".card.collapsible > h2").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("collapsed")));
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(!confirm("清除所有已填欄位？"))return;
-  S.find={};S.note={};S.txt={};S.tags=new Set();S.growth={};S.ccConn="for";S.dysmorphicOn=false;S.twinOn=false;
+  S.find={};S.note={};S.txt={};S.tags=new Set();S.growth={};S.ccConn="for";S.dysmorphicOn=false;S.twinOn=false;S.generalPeOn=true;
   S.pubertyOn=(S.tpl!=="obesity");
   S.seg={delivery:"NSD",dms:"",breastside:"",twin:"A"};
   S.tanner={breast:"I",pubic:"I"};
   document.querySelectorAll("input,textarea.plain,textarea[data-f],textarea[data-note-g]").forEach(i=>{if(i.type!=="checkbox")i.value="";});
   document.getElementById("dysmorphicOn").checked=false;
   document.getElementById("twinOn").checked=false;
+  document.getElementById("generalPeOn").checked=true;
   document.getElementById("pubertyOn").checked=S.pubertyOn;
   document.getElementById("ccPreset").value="";document.getElementById("ccConnWord").textContent="for";
   document.querySelectorAll(".chip").forEach(c=>{c.classList.remove("pos");c.querySelector(".sign").textContent="(−)";});
@@ -657,7 +665,8 @@ function render(){
   let vitalLine=`BH ${t("bh")} (P${bhP}), BW ${t("bw")} (P${bwP})`;
   if(bmiStr)vitalLine+=`, BMI ${bmiStr}${bmiP?` (P${bmiP})`:""}`;
   let oLines=[vitalLine];
-  oLines.push("HEENT: conjunctiva not pale","Thyroid: not palpable","Chest: bilateral clear breathing sound","Heart: RHB, no murmur","Abdomen: soft and flat, normoactive bowel sound","Ext: freely movable",`Skin: ${parts("skin").concat(S.tpl==="obesity"?parts("skin_ob"):[]).join(", ")}`);
+  if(S.generalPeOn) oLines.push("HEENT: conjunctiva not pale","Chest: bilateral clear breathing sound","Heart: RHB, no murmur","Abdomen: soft and flat, normoactive bowel sound","Ext: freely movable");
+  oLines.push("Thyroid: not palpable",`Skin: ${parts("skin").concat(S.tpl==="obesity"?parts("skin_ob"):[]).join(", ")}`);
   // Breast & pubertal — included only when its checkbox is on
   if(S.pubertyOn) oLines.push(genital);
   // Dysmorphic stigmata: included only when the section checkbox is on;
