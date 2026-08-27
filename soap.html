@@ -402,7 +402,11 @@ const FIND={
 };
 const NOTE_GROUPS={drug_pp:true,drug_ss:true,skin:true};
 const SYSDZ_TAGS=["asthma","allergic rhinitis","atopic dermatitis","ADHD"];
-const SEMS=["幼小上","幼小下","幼中上","幼中下","幼大上","幼大下","小一上","小一下","小二上","小二下","小三上","小三下","小四上","小四下","小五上","小五下","小六上","小六下","國一上","國一下","國二上","國二下","國三上","國三下"];
+const SEMS_KG=["幼小上","幼小下","幼中上","幼中下","幼大上","幼大下"];
+const SEMS_ELEM=["小一上","小一下","小二上","小二下","小三上","小三下","小四上","小四下","小五上","小五下","小六上","小六下"];
+const SEMS_JUNIOR=["國一上","國一下","國二上","國二下","國三上","國三下"];
+// Canonical order (used for reading values back out); the on-screen columns are laid out separately
+const SEMS=[...SEMS_KG,...SEMS_ELEM,...SEMS_JUNIOR];
 
 const S={tpl:"growth",sex:"f",find:{},note:{},txt:{},tags:new Set(),growth:{},dysmorphicOn:false,twinOn:false,pubertyOn:true,
   seg:{delivery:"NSD",dms:"",breastside:"",twin:"A"},
@@ -449,8 +453,10 @@ document.querySelectorAll(".tanner").forEach(box=>{
 });
 /* growth grid: left column = 小學 (12), right column = 幼稚園 + 國中 (6 + 6 = 12) */
 const gg=document.getElementById("growthGrid");
-const SEMS_LEFT=SEMS.slice(6,18);   // 小一上 → 小六下
-const SEMS_RIGHT=SEMS.slice(0,6).concat(SEMS.slice(18,24));  // 幼小上→幼大下, 國一上→國三下
+// Left column = 小學 (most used). Right column continues the school progression from the
+// bottom of the left column, so Tab from 小六下 lands on 國一上; 幼稚園 sits last as it is rarely used.
+const SEMS_LEFT=SEMS_ELEM;
+const SEMS_RIGHT=[...SEMS_JUNIOR,...SEMS_KG];
 [SEMS_LEFT,SEMS_RIGHT].forEach(col=>{
   const tbl=document.createElement("table");tbl.className="growth";
   tbl.innerHTML="<thead><tr><th>學期</th><th>Ht(cm)</th><th>Wt(kg)</th></tr></thead>";
