@@ -335,38 +335,67 @@ function percentileOf(value, mean, sd) {
 
 // Compute percentile rank by interpolating within the reference percentile bands
 // Returns a value 0-100 using piecewise linear interpolation between known percentiles
-function percentileFromRef(value, ref, metric) {
+// Percentile breakpoints of the reference table, paired with their z-scores.
+// Interpolating in z rather than in percentile matters for two reasons:
+//   1. it is how the BMI reference is already handled, so all three metrics agree;
+//   2. zFromRef and valueFromZ below are then exact inverses of each other, which the
+//      previous percentile-space code was not — outside P3–P97 the forward and backward
+//      formulas used unrelated ad-hoc factors, so a child far below P3 round-tripped back
+//      to roughly P3 and produced a wildly over-optimistic projected height.
+// Beyond the tabulated range the outermost segment's slope is continued, i.e. a constant
+// SD is assumed outside P3–P97.
+const REF_PCTS = [3, 15, 25, 50, 75, 85, 97];
+const REF_ZS = [-1.8808, -1.0364, -0.6745, 0, 0.6745, 1.0364, 1.8808];
+
+function _refPoints(ref, metric) {
+  return REF_PCTS.map((p, i) => ({ v: ref[metric + p], z: REF_ZS[i] }));
+}
+
+// Height/weight → z-score against the reference at a given age
+function zFromRef(value, ref, metric) {
   if (value == null || ref == null) return null;
-  const prefix = metric; // "h" or "w"
-  const bands = [
-    { pct: 3,  lo: -Infinity,        hi: ref[prefix + "3"]  },
-    { pct: 9,  lo: ref[prefix + "3"],  hi: ref[prefix + "15"] },
-    { pct: 20, lo: ref[prefix + "15"], hi: ref[prefix + "25"] },
-    { pct: 37.5, lo: ref[prefix + "25"], hi: ref[prefix + "50"] },
-    { pct: 62.5, lo: ref[prefix + "50"], hi: ref[prefix + "75"] },
-    { pct: 80, lo: ref[prefix + "75"], hi: ref[prefix + "85"] },
-    { pct: 91, lo: ref[prefix + "85"], hi: ref[prefix + "97"] },
-    { pct: 97, lo: ref[prefix + "97"], hi: Infinity           },
-  ];
-  // Sorted breakpoints with their percentile values
-  const pts = [
-    { v: ref[prefix + "3"],  p: 3  },
-    { v: ref[prefix + "15"], p: 15 },
-    { v: ref[prefix + "25"], p: 25 },
-    { v: ref[prefix + "50"], p: 50 },
-    { v: ref[prefix + "75"], p: 75 },
-    { v: ref[prefix + "85"], p: 85 },
-    { v: ref[prefix + "97"], p: 97 },
-  ];
-  if (value <= pts[0].v) return pts[0].p * value / pts[0].v; // extrapolate toward 0
-  if (value >= pts[pts.length-1].v) return Math.min(99.9, pts[pts.length-1].p + (value - pts[pts.length-1].v) / pts[pts.length-1].v * 2);
-  for (let i = 0; i < pts.length - 1; i++) {
-    if (value >= pts[i].v && value <= pts[i+1].v) {
-      const t = (value - pts[i].v) / (pts[i+1].v - pts[i].v);
-      return pts[i].p + t * (pts[i+1].p - pts[i].p);
+  const pts = _refPoints(ref, metric), n = pts.length;
+  if (value <= pts[0].v) {
+    const s = (pts[1].z - pts[0].z) / (pts[1].v - pts[0].v);
+    return pts[0].z + (value - pts[0].v) * s;
+  }
+  if (value >= pts[n - 1].v) {
+    const s = (pts[n - 1].z - pts[n - 2].z) / (pts[n - 1].v - pts[n - 2].v);
+    return pts[n - 1].z + (value - pts[n - 1].v) * s;
+  }
+  for (let i = 0; i < n - 1; i++) {
+    if (value >= pts[i].v && value <= pts[i + 1].v) {
+      const t = (value - pts[i].v) / (pts[i + 1].v - pts[i].v);
+      return pts[i].z + t * (pts[i + 1].z - pts[i].z);
     }
   }
   return null;
+}
+
+// Exact inverse of zFromRef: z-score → height/weight at a given age
+function valueFromZ(z, ref, metric) {
+  if (z == null || ref == null) return null;
+  const pts = _refPoints(ref, metric), n = pts.length;
+  if (z <= pts[0].z) {
+    const s = (pts[1].v - pts[0].v) / (pts[1].z - pts[0].z);
+    return pts[0].v + (z - pts[0].z) * s;
+  }
+  if (z >= pts[n - 1].z) {
+    const s = (pts[n - 1].v - pts[n - 2].v) / (pts[n - 1].z - pts[n - 2].z);
+    return pts[n - 1].v + (z - pts[n - 1].z) * s;
+  }
+  for (let i = 0; i < n - 1; i++) {
+    if (z >= pts[i].z && z <= pts[i + 1].z) {
+      const t = (z - pts[i].z) / (pts[i + 1].z - pts[i].z);
+      return pts[i].v + t * (pts[i + 1].v - pts[i].v);
+    }
+  }
+  return null;
+}
+
+function percentileFromRef(value, ref, metric) {
+  const z = zFromRef(value, ref, metric);
+  return z == null ? null : _normCdf(z) * 100;
 }
 
 function bmiCategory(bmi, ref) {
@@ -563,37 +592,14 @@ function computePAH2(sex, boneAge, height) {
   if (!refAtBone) {
     return { pah: null, outOfRange: true, reason: `骨齡 ${boneAge} 超出 reference 範圍 (0–18.5 歲)` };
   }
-  // Compute the percentile rank at bone age using percentile-interpolation
-  const pct = percentileFromRef(height, refAtBone, "h");
-  // Map that percentile back to the final height at the last reference age
+  // z-score at bone age, projected onto the final reference age at the same z.
+  // valueFromZ is the exact inverse of zFromRef, so the projection stays faithful
+  // even when the child sits well outside P3–P97.
+  const z = zFromRef(height, refAtBone, "h");
+  if (z == null) return { pah: null, outOfRange: true, reason: "無法計算 z-score" };
   const finalRef = REFERENCE[REFERENCE.length - 1][sex];
-  // Interpolate to find height at that percentile in the final reference
-  const finalPts = [
-    { v: finalRef.h3, p: 3 }, { v: finalRef.h15, p: 15 },
-    { v: finalRef.h25, p: 25 }, { v: finalRef.h50, p: 50 },
-    { v: finalRef.h75, p: 75 }, { v: finalRef.h85, p: 85 },
-    { v: finalRef.h97, p: 97 },
-  ];
-  let pah = null;
-  if (pct <= finalPts[0].p) {
-    pah = finalPts[0].v - (finalPts[0].p - pct) / finalPts[0].p * finalPts[0].v * 0.05;
-  } else if (pct >= finalPts[finalPts.length-1].p) {
-    pah = finalPts[finalPts.length-1].v + (pct - finalPts[finalPts.length-1].p) * 0.1;
-  } else {
-    for (let i = 0; i < finalPts.length - 1; i++) {
-      if (pct >= finalPts[i].p && pct <= finalPts[i+1].p) {
-        const t = (pct - finalPts[i].p) / (finalPts[i+1].p - finalPts[i].p);
-        pah = finalPts[i].v + t * (finalPts[i+1].v - finalPts[i].v);
-        break;
-      }
-    }
-  }
-  // Approximate z-score from percentile for display purposes
-  const pFrac = pct / 100;
-  const zApprox = pFrac < 0.5
-    ? -(Math.sqrt(-2 * Math.log(pFrac)))
-    : Math.sqrt(-2 * Math.log(1 - pFrac));
-  return { pah, z: zApprox, percentile: pct, outOfRange: false };
+  const pah = valueFromZ(z, finalRef, "h");
+  return { pah, z, percentile: _normCdf(z) * 100, outOfRange: false };
 }
 
 // Mid-parental target height
@@ -2312,58 +2318,18 @@ function PercentileChart({ title, unit, sex, metric, measurements, ageRange, tre
     initialPoints.forEach(p => addPatientPoint(p.age, "initial", p.value));
     followupPoints.forEach(p => addPatientPoint(p.age, "followup", p.value));
     const data = Array.from(map.values()).sort((a, b) => a.age - b.age);
-    // Inject target height curve: find percentile of target.mid at last REFERENCE age,
-    // then interpolate that same percentile at each age point in the data.
+    // Inject target height curve: take the z-score of the mid-parental target height at the
+    // final reference age, then read that same z back out at every plotted age. zFromRef and
+    // valueFromZ are exact inverses, so the curve stays parallel to the percentile bands even
+    // when the parents are tall or short enough to put the target outside P3–P97.
     if (metric === "h" && target) {
       const lastRef = REFERENCE[REFERENCE.length - 1][sex];
-      const pts = [
-        { v: lastRef.h3,  p: 3  }, { v: lastRef.h15, p: 15 },
-        { v: lastRef.h25, p: 25 }, { v: lastRef.h50, p: 50 },
-        { v: lastRef.h75, p: 75 }, { v: lastRef.h85, p: 85 },
-        { v: lastRef.h97, p: 97 },
-      ];
-      // Find target percentile fraction (0–100) by interpolating within breakpoints
-      const tgt = target.mid;
-      let targetPct = null;
-      if (tgt <= pts[0].v) {
-        targetPct = pts[0].p * (tgt / pts[0].v);
-      } else if (tgt >= pts[pts.length - 1].v) {
-        targetPct = Math.min(99, pts[pts.length - 1].p + (tgt - pts[pts.length - 1].v) * 0.5);
-      } else {
-        for (let i = 0; i < pts.length - 1; i++) {
-          if (tgt >= pts[i].v && tgt <= pts[i + 1].v) {
-            const t = (tgt - pts[i].v) / (pts[i + 1].v - pts[i].v);
-            targetPct = pts[i].p + t * (pts[i + 1].p - pts[i].p);
-            break;
-          }
-        }
-      }
-      if (targetPct != null) {
+      const targetZ = zFromRef(target.mid, lastRef, "h");
+      if (targetZ != null) {
         data.forEach(row => {
-          // Get the interpolated ref at this age to find what height = targetPct at this age
           const ref = refAt(row.age, sex);
           if (!ref) return;
-          const agePts = [
-            { v: ref.h3, p: 3 }, { v: ref.h15, p: 15 },
-            { v: ref.h25, p: 25 }, { v: ref.h50, p: 50 },
-            { v: ref.h75, p: 75 }, { v: ref.h85, p: 85 },
-            { v: ref.h97, p: 97 },
-          ];
-          let heightAtPct = null;
-          if (targetPct <= agePts[0].p) {
-            heightAtPct = agePts[0].v - (agePts[0].p - targetPct) / agePts[0].p * agePts[0].v * 0.02;
-          } else if (targetPct >= agePts[agePts.length - 1].p) {
-            heightAtPct = agePts[agePts.length - 1].v + (targetPct - agePts[agePts.length - 1].p) * 0.05;
-          } else {
-            for (let i = 0; i < agePts.length - 1; i++) {
-              if (targetPct >= agePts[i].p && targetPct <= agePts[i + 1].p) {
-                const t = (targetPct - agePts[i].p) / (agePts[i + 1].p - agePts[i].p);
-                heightAtPct = agePts[i].v + t * (agePts[i + 1].v - agePts[i].v);
-                break;
-              }
-            }
-          }
-          row.targetLine = heightAtPct;
+          row.targetLine = valueFromZ(targetZ, ref, "h");
         });
       }
     }
