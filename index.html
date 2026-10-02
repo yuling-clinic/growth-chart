@@ -683,7 +683,7 @@ function parsePastedData(text, birthISO) {
   if (!text || !text.trim()) return { rows: [], errors: [] };
   const rows = [];
   const errors = [];
-  let lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  let lines = text.split(/\r?\n/).map(l => normalizePasted(l).trim()).filter(l => l.length > 0);
 
   // Pre-pass: if a line contains multiple grade tokens, split before each grade token.
   // E.g. "Date Ht Wt 中班上 106.1 15.8 中班下 108.7 16.9" → ["中班上 106.1 15.8", "中班下 108.7 16.9"]
@@ -2919,11 +2919,41 @@ const tdStyle = {
 
 // =================== Bone Age Batch Paste ===================
 // Parse "AyBm" or "Ay" into decimal years
+// Chinese IMEs produce full-width punctuation and several dash-like characters that look
+// identical to ASCII in a monospace font. Normalising once up front keeps every downstream
+// regex simple and stops a pasted line failing for an invisible reason.
+function normalizePasted(line) {
+  if (!line) return "";
+  return String(line)
+    // dashes: hyphen variants, en/em dash, minus sign, full-width hyphen, wave dashes
+    .replace(/[\u2010-\u2015\u2212\uFF0D\uFE63\u301C\uFF5E]/g, "-")
+    // full-width parentheses, colon, comma, space, asterisk, tilde
+    .replace(/\uFF08/g, "(").replace(/\uFF09/g, ")")
+    .replace(/\uFF1A/g, ":").replace(/\uFF0C/g, ",")
+    .replace(/\u3000/g, " ").replace(/\uFF0A/g, "*").replace(/\uFF5E/g, "~")
+    // full-width digits and letters
+    .replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[\uFF21-\uFF3A\uFF41-\uFF5A]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
 function parseYm(str) {
   if (!str) return null;
   const m = str.match(/^(\d+)y(?:(\d+)m)?$/i);
   if (!m) return null;
   return parseInt(m[1]) + (m[2] ? parseInt(m[2]) / 12 : 0);
+}
+
+// Range endpoint: "12y6m", "12y", "6m", or a bare number meaning years.
+// The bare form lets the unit be written once at the end of a range, e.g. "6-7y".
+function parseRangeEnd(str) {
+  if (!str) return null;
+  let m = str.match(/^(\d+)y(?:(\d+)m)?$/i);
+  if (m) return parseInt(m[1]) + (m[2] ? parseInt(m[2]) / 12 : 0);
+  m = str.match(/^(\d+)m$/i);
+  if (m) return parseInt(m[1]) / 12;
+  m = str.match(/^(\d+(?:\.\d+)?)$/);
+  if (m) return parseFloat(m[1]);
+  return null;
 }
 
 // Parse a single bone-age line. Returns { dateISO, boneAge } or null.
@@ -2936,7 +2966,8 @@ function parseYm(str) {
 //    - "AyBm-CyDm(V)"    → 75% into range from left endpoint
 //    - "~AyBm"           → single value
 //    - "AyBm"            → single value
-function parseBoneAgeLine(line) {
+function parseBoneAgeLine(rawLine) {
+  const line = normalizePasted(rawLine);
   // Date accepts separators (2024-02-19, 2024/2/19, 113.2.19) or plain digits
   // (20240219 Western, 1130219 / 940315 ROC) — same set the measurement paste accepts.
   const dateMatch = line.match(/Bone\s*age\s*\(\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{2,3}[-/.]\d{1,2}[-/.]\d{1,2}|\d{8}|\d{7}|\d{6})\s*\)\s*[:：]?\s*/i);
@@ -2977,13 +3008,16 @@ function parseBoneAgeLine(line) {
   const clean = beforeCA.replace(/^~\s*/, "").trim();
 
   // Range with optional (V) markers
-  const rangeMatch = clean.match(/^(\d+y(?:\d+m)?)\s*(\(V\)|（V）|\*|＊)?\s*[-–—]\s*(\d+y(?:\d+m)?)\s*(\(V\)|（V）|\*|＊)?/i);
+  // Endpoints may omit the unit so it can be written once, e.g. "6-7y"
+  const rangeMatch = clean.match(/^(\d+y(?:\d+m)?|\d+m|\d+(?:\.\d+)?)\s*(\(V\)|（V）|\*|＊)?\s*[-–—]\s*(\d+y(?:\d+m)?|\d+m|\d+(?:\.\d+)?)\s*(\(V\)|（V）|\*|＊)?/i);
   if (rangeMatch) {
-    const left = parseYm(rangeMatch[1]);
-    const right = parseYm(rangeMatch[3]);
+    const left = parseRangeEnd(rangeMatch[1]);
+    const right = parseRangeEnd(rangeMatch[3]);
     const vLeft = !!rangeMatch[2];
     const vRight = !!rangeMatch[4];
-    if (left != null && right != null) {
+    // Guard against stray numbers being read as a bone age range
+    const plausible = (x) => x != null && x >= 0 && x <= 20;
+    if (plausible(left) && plausible(right)) {
       let ba;
       if (vLeft && !vRight) ba = left + (right - left) * 0.25;
       else if (vRight && !vLeft) ba = left + (right - left) * 0.75;
