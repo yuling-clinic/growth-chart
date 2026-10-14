@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="起跑線評估">
+<meta name="theme-color" content="#F4B860">
+<title>新生兒起跑線評估</title>
+<style>
+:root{
+  --cream:#FFF8EE; --card:#FFFDF8; --honey:#F4B860; --honey-d:#E39B3A;
+  --cocoa:#7A5230; --cocoa-l:#A47B57; --blush:#F6C6B8; --mint:#CFE8D5;
+  --rose:#F3B0A6; --sky:#CFE3F0; --line:#EEDFCB; --text:#5B3E26;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--text);
+  font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 40px}
+header{display:flex;align-items:center;gap:14px;margin:8px 0 14px}
+header h1{font-size:1.45rem;margin:0;color:var(--cocoa)}
+header p{margin:2px 0 0;font-size:.85rem;color:var(--cocoa-l)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:18px;margin-bottom:16px;
+  box-shadow:0 4px 0 #F1E2CC}
+.card h2{margin:0 0 12px;font-size:1.05rem;color:var(--cocoa);display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--honey)}
+.warn{background:#FFF1E6;border:2px dashed var(--blush);border-radius:16px;padding:10px 14px;font-size:.88rem}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:.85rem;font-weight:600;margin-bottom:4px;color:var(--cocoa)}
+select,input{width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:14px;background:#fff;
+  font-size:1rem;color:var(--text)}
+select:focus,input:focus{outline:none;border-color:var(--honey)}
+.row2{display:flex;gap:8px}
+.seg{display:flex;background:#F7EBDA;border-radius:14px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;padding:8px;border-radius:11px;font-size:.95rem;color:var(--cocoa-l);cursor:pointer}
+.seg button.on{background:#fff;color:var(--cocoa);font-weight:700;box-shadow:0 2px 0 var(--line)}
+.btn{width:100%;margin-top:14px;padding:13px;border:0;border-radius:16px;background:var(--honey);color:#fff;
+  font-size:1.05rem;font-weight:700;cursor:pointer;box-shadow:0 4px 0 var(--honey-d)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--honey-d)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button{border:2px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--cocoa-l)}
+.tabs button.on{background:var(--cocoa);border-color:var(--cocoa);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:700;font-size:.85rem}
+.sga{background:var(--rose)} .aga{background:var(--mint)} .lga{background:var(--sky)}
+.na{color:#B9A28A;font-size:.85rem}
+.sub{font-size:.78rem;color:var(--cocoa-l)}
+.refs{font-size:.82rem}
+.refs li{margin-bottom:8px}
+.note{font-size:.8rem;color:var(--cocoa-l);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <!-- 原創小熊 -->
+  <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="15" cy="16" r="10" fill="#C98E5A"/><circle cx="15" cy="16" r="5" fill="#F6C6B8"/>
+    <circle cx="49" cy="16" r="10" fill="#C98E5A"/><circle cx="49" cy="16" r="5" fill="#F6C6B8"/>
+    <circle cx="32" cy="35" r="24" fill="#D9A06B"/>
+    <ellipse cx="32" cy="42" rx="11" ry="8.5" fill="#FFF3E2"/>
+    <circle cx="23" cy="32" r="2.6" fill="#5B3E26"/><circle cx="41" cy="32" r="2.6" fill="#5B3E26"/>
+    <ellipse cx="32" cy="38.5" rx="3.4" ry="2.4" fill="#5B3E26"/>
+    <path d="M28.5 43 Q32 46.5 35.5 43" stroke="#5B3E26" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <circle cx="17" cy="40" r="3.4" fill="#F3B0A6" opacity=".8"/><circle cx="47" cy="40" r="3.4" fill="#F3B0A6" opacity=".8"/>
+  </svg>
+  <div>
+    <h1>新生兒起跑線評估</h1>
+    <p>Newborn Percentiles · 出生體重／身長／頭圍百分位區間</p>
+  </div>
+</header>
+
+<div class="warn">⚠️ <b>醫療免責聲明：</b>本網頁僅為醫療輔助使用，臨床照護仍需仰賴醫護專業判斷。</div>
+<div style="height:16px"></div>
+
+<section class="card">
+  <h2>參數輸入</h2>
+  <div class="grid">
+    <div>
+      <label>懷孕週數</label>
+      <div class="row2">
+        <select id="wk"></select>
+        <select id="dy"></select>
+      </div>
+    </div>
+    <div>
+      <label>性別</label>
+      <div class="seg" id="sex"><button data-v="M" class="on">男</button><button data-v="F">女</button></div>
+    </div>
+    <div>
+      <label>胎數</label>
+      <div class="seg" id="plur"><button data-v="single" class="on">單胞胎</button><button data-v="multi">多胞胎</button></div>
+    </div>
+    <div>
+      <label>體重 (g)</label>
+      <input id="bw" type="number" inputmode="decimal" placeholder="例：2850">
+    </div>
+    <div>
+      <label>身長 (cm)</label>
+      <input id="bl" type="number" inputmode="decimal" step="0.1" placeholder="例：49.5">
+    </div>
+    <div>
+      <label>頭圍 (cm)</label>
+      <input id="hc" type="number" inputmode="decimal" step="0.1" placeholder="例：33.0">
+    </div>
+  </div>
+  <button class="btn" id="go">計算百分位區間</button>
+</section>
+
+<section class="card" id="result" hidden>
+  <h2>評估結果</h2>
+  <div class="tabs" id="tabs">
+    <button data-t="taiwan" class="on">Taiwan</button>
+    <button data-t="fenton">Fenton 2025</button>
+    <button data-t="who">WHO</button>
+  </div>
+  <div id="out"></div>
+  <p class="note">百分位以「完成週數」查表（例如 37+5 週以 37 週計）。區間判讀：&lt;P10 為 SGA，P10–P90 為 AGA，&gt;P90 為 LGA。</p>
+</section>
+
+<section class="card">
+  <h2>參考資料</h2>
+  <ol class="refs">
+    <li>Hu IJ, Hsieh CJ, Jeng SF, Wu HC, Chen CY, Chou HC, Tsao PN, Lin SJ, Chen PC, Hsieh WS. Nationwide twin birth weight percentiles by gestational age in Taiwan. <i>Pediatr Neonatol.</i> 2015;56(5):294–300. doi:10.1016/j.pedneo.2014.12.004</li>
+    <li>Wu JL, Kuo CH, Chen CN, Tsao PN, Li CY, Li HY. Nationwide singleton birth weight percentiles for gestational age in Taiwan in 2008–2017. <i>Pediatr Neonatol.</i> 2026;67(2):133–138. doi:10.1016/j.pedneo.2025.03.010</li>
+    <li>Hsieh WS, Wu HC, Jeng SF, Liao HF, Su YN, Lin SJ, Hsieh CJ, Chen PC. Nationwide singleton birth weight percentiles by gestational age in Taiwan, 1998–2002. <i>Acta Paediatr Taiwan.</i> 2006;47(1):25–33.</li>
+    <li>實用新生兒科醫療手冊（2017 年第二版）。<span class="sub">〔編者／出版社待補〕</span></li>
+    <li>Fenton TR, Elmrayed S, Alshaikh BN. Fenton third-generation growth charts of preterm infants without abnormal fetal growth: a systematic review and meta-analysis. <i>Paediatr Perinat Epidemiol.</i> 2025. doi:10.1111/ppe.70035</li>
+    <li>Kiserud T, Piaggio G, Carroli G, et al. The World Health Organization fetal growth charts: a multinational longitudinal study of ultrasound biometric measurements and estimated fetal weight. <i>PLoS Med.</i> 2017;14(1):e1002220. doi:10.1371/journal.pmed.1002220 （及其 Correction, <i>PLoS Med.</i> 2017）<br>
+    <span class="sub">註：WHO 曲線為超音波推估胎兒體重 (EFW)，並非新生兒出生測量值；用於早產兒出生體重時可能高估 SGA，僅供參考。</span></li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+/* =====================================================================
+   百分位資料表
+   格式：{ ref, label, p:[百分位...], M:{週數:[數值...]}, F:{...} }
+   數值順序須與 p 對應。尚未填入的表會顯示「資料待補」，不會亂算。
+   ===================================================================== */
+const DATA = {
+  /* Fenton 2025 出生體重切點 (g)，來源：Univ. of Calgary
+     "2025 ASSIGN size for gestational age at birth v2" */
+  fenton_bw: {
+    ref:5, label:"體重", unit:"g", p:[3,10,90,97],
+    M:{22:[367,411,599,643],23:[436,488,704,754],24:[511,571,820,876],25:[594,665,953,1018],
+       26:[684,767,1102,1177],27:[785,877,1263,1352],28:[899,996,1436,1544],29:[1025,1125,1623,1757],
+       30:[1159,1263,1826,1990],31:[1300,1413,2046,2237],32:[1450,1577,2282,2496],33:[1616,1757,2535,2766],
+       34:[1792,1949,2796,3044],35:[1970,2143,3056,3317],36:[2141,2330,3306,3579],37:[2317,2523,3558,3838],
+       38:[2494,2714,3791,4075],39:[2655,2888,4000,4288],40:[2801,3040,4178,4471],41:[2927,3171,4324,4620],
+       42:[2973,3215,4352,4643]},
+    F:{22:[359,392,558,603],23:[423,464,662,713],24:[492,542,774,832],25:[570,631,902,968],
+       26:[658,729,1044,1120],27:[753,834,1197,1285],28:[854,944,1359,1463],29:[964,1062,1536,1660],
+       30:[1086,1194,1735,1882],31:[1220,1340,1958,2130],32:[1366,1501,2199,2394],33:[1524,1673,2447,2663],
+       34:[1691,1856,2699,2932],35:[1863,2042,2954,3203],36:[2034,2229,3204,3468],37:[2213,2419,3436,3707],
+       38:[2410,2620,3645,3916],39:[2590,2801,3828,4098],40:[2736,2953,4002,4276],41:[2828,3051,4128,4410],
+       42:[2859,3087,4184,4470]}
+  },
+  /* 以下待填入（請由原始文獻表格輸入，勿估計） */
+  tw2026_bw:{ref:2,label:"體重 (2026 paper)",unit:"g",p:[],M:{},F:{}},
+  tw2006_bw:{ref:3,label:"體重 (2006 paper)",unit:"g",p:[],M:{},F:{}},
+  twin_bw:  {ref:1,label:"體重 (雙胞胎)",unit:"g",p:[],M:{},F:{}},
+  tw_bl:    {ref:4,label:"身長",unit:"cm",p:[],M:{},F:{}},
+  tw_hc:    {ref:4,label:"頭圍",unit:"cm",p:[],M:{},F:{}},
+  fenton_bl:{ref:5,label:"身長",unit:"cm",p:[],M:{},F:{}},
+  fenton_hc:{ref:5,label:"頭圍",unit:"cm",p:[],M:{},F:{}},
+  who_bw:   {ref:6,label:"體重 (EFW)",unit:"g",p:[],M:{},F:{}},
+  who_hc:   {ref:6,label:"頭圍",unit:"cm",p:[],M:{},F:{}}
+};
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+for(let w=22; w<=42; w++) $("wk").add(new Option(w+" 週", w));
+$("wk").value = 38;
+for(let d=0; d<=6; d++) $("dy").add(new Option(d+" 天", d));
+document.querySelectorAll(".seg").forEach(seg=>{
+  seg.addEventListener("click",e=>{
+    if(e.target.tagName!=="BUTTON") return;
+    seg.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===e.target));
+  });
+});
+const segVal = id => $(id).querySelector(".on").dataset.v;
+
+let tab = "taiwan";
+$("tabs").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON") return;
+  tab = e.target.dataset.t;
+  $("tabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===e.target));
+  render();
+});
+
+/* ---------- 計算 ---------- */
+function interval(tbl, sex, wk, v){
+  if(v===null || isNaN(v)) return {txt:"未輸入", cls:"na"};
+  const row = tbl[sex] && tbl[sex][wk];
+  if(!tbl.p.length || !row) return {txt:"資料待補", cls:"na"};
+  const p = tbl.p;
+  let txt;
+  if(v < row[0]) txt = "< P" + p[0];
+  else if(v >= row[row.length-1]) txt = "≥ P" + p[p.length-1];
+  else {
+    for(let i=0;i<row.length-1;i++){
+      if(v>=row[i] && v<row[i+1]){ txt = "P"+p[i]+" – P"+p[i+1]; break; }
+    }
+  }
+  // SGA/AGA/LGA（僅在表中含 P10、P90 時判讀）
+  const i10 = p.indexOf(10), i90 = p.indexOf(90);
+  let cls = "aga", tag = "";
+  if(i10>=0 && v < row[i10]){cls="sga"; tag=" · SGA";}
+  else if(i90>=0 && v > row[i90]){cls="lga"; tag=" · LGA";}
+  else if(i10>=0 && i90>=0){tag=" · AGA";}
+  return {txt: txt+tag, cls, row, p};
+}
+
+function rowHTML(tbl, sex, wk, v){
+  const r = interval(tbl, sex, wk, v);
+  const cut = r.row ? `<div class="sub">${r.p.map((q,i)=>"P"+q+" "+r.row[i]).join("　")} ${tbl.unit}</div>` : "";
+  return `<tr><td>${tbl.label}<div class="sub">Ref ${tbl.ref}</div></td>
+          <td>${v===null||isNaN(v)?"—":v+" "+tbl.unit}</td>
+          <td><span class="pill ${r.cls}">${r.txt}</span>${cut}</td></tr>`;
+}
+
+function num(id){ const s=$(id).value.trim(); return s===""?null:parseFloat(s); }
+
+function render(){
+  const wk = +$("wk").value, sex = segVal("sex"), multi = segVal("plur")==="multi";
+  const bw=num("bw"), bl=num("bl"), hc=num("hc");
+  let rows = [];
+  if(tab==="taiwan"){
+    if(multi) rows.push(rowHTML(DATA.twin_bw,sex,wk,bw));
+    else { rows.push(rowHTML(DATA.tw2026_bw,sex,wk,bw)); rows.push(rowHTML(DATA.tw2006_bw,sex,wk,bw)); }
+    rows.push(rowHTML(DATA.tw_bl,sex,wk,bl)); rows.push(rowHTML(DATA.tw_hc,sex,wk,hc));
+  } else if(tab==="fenton"){
+    rows.push(rowHTML(DATA.fenton_bw,sex,wk,bw)); rows.push(rowHTML(DATA.fenton_bl,sex,wk,bl));
+    rows.push(rowHTML(DATA.fenton_hc,sex,wk,hc));
+  } else {
+    rows.push(rowHTML(DATA.who_bw,sex,wk,bw)); rows.push(rowHTML(DATA.who_hc,sex,wk,hc));
+  }
+  const note = (tab!=="taiwan" && multi) ? `<p class="sub">此參考標準未區分胎數，以單胞胎資料比較。</p>` : "";
+  $("out").innerHTML = `<p class="sub">${wk} 週 ${$("dy").value} 天 · ${sex==="M"?"男":"女"} · ${multi?"多胞胎":"單胞胎"}</p>
+    <table><thead><tr><th>項目</th><th>測量值</th><th>百分位區間</th></tr></thead><tbody>${rows.join("")}</tbody></table>${note}`;
+}
+
+$("go").addEventListener("click",()=>{ $("result").hidden=false; render(); $("result").scrollIntoView({behavior:"smooth"}); });
+</script>
+</body>
+</html>
