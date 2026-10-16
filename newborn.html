@@ -48,7 +48,12 @@ table{width:100%;border-collapse:collapse;font-size:.92rem}
 th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
 .pill{display:inline-block;font-weight:700;font-size:.95rem}
-.sga{color:#C0503E} .aga{color:#3F7D52} .lga{color:#3B6F9A}
+.pill{color:var(--text)}
+.na{color:#B9A28A}
+.tag{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.03em;vertical-align:1px}
+.tag.sga{background:#F9D9D2;color:#A8402F}
+.tag.aga{background:#D9EEDD;color:#2F6B42}
+.tag.lga{background:#D6E7F4;color:#2D5F88}
 .na{color:#B9A28A;font-size:.85rem}
 .sub{font-size:.78rem;color:var(--cocoa-l)}
 .refs{font-size:.82rem}
@@ -279,7 +284,9 @@ function num(id){ const s=$(id).value.trim(); return s===""?null:parseFloat(s); 
 function resLine(tbl, sex, wk, v, src){
   const r = interval(tbl, sex, wk, v);
   const tip = r.row ? `${r.p.map((q,i)=>"P"+q+" "+r.row[i]).join("　")} ${tbl.unit}` : (r.lmsNote||"");
-  return `<div class="mr${tip?" has-tip":""}"><span class="pill ${r.cls}">${r.txt}</span>${src?` <span class="src">${src}</span>`:""}${tip?`<span class="tipbox">${tip}</span>`:""}</div>`;
+  const m = r.txt.match(/^(.*) · (SGA|AGA|LGA)$/);
+  const main = m ? m[1] : r.txt, tag = m ? `<span class="tag ${r.cls}">${m[2]}</span>` : "";
+  return `<div class="mr${tip?" has-tip":""}"><span class="pill${m?"":" "+r.cls}">${main}</span>${tag}${src?` <span class="src">${src}</span>`:""}${tip?`<span class="tipbox">${tip}</span>`:""}</div>`;
 }
 function meas(name, v, unit, lines, notes){
   return `<div class="meas"><div class="mh"><span class="lab">${name}</span><span class="val">${v===null||isNaN(v)?"—":v+" "+unit}</span></div>
