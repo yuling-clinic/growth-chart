@@ -35,6 +35,7 @@ select,input{width:100%;padding:10px 12px;border:2px solid var(--line);border-ra
 select:focus,input:focus{outline:none;border-color:var(--honey)}
 .row2{display:flex;gap:8px}
 .seg{display:flex;background:#F7EBDA;border-radius:14px;padding:3px}
+.seg button:focus-visible{outline:2px solid var(--honey);outline-offset:1px}
 .seg button{flex:1;border:0;background:transparent;padding:8px;border-radius:11px;font-size:.95rem;color:var(--cocoa-l);cursor:pointer}
 .seg button.on{background:#fff;color:var(--cocoa);font-weight:700;box-shadow:0 2px 0 var(--line)}
 .btn{width:100%;margin-top:14px;padding:13px;border:0;border-radius:16px;background:var(--honey);color:#fff;
@@ -55,6 +56,29 @@ th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
 .logo{flex:none}
 .dot{flex:none;width:40px;height:40px;border-radius:50%;background:var(--honey);box-shadow:0 3px 0 var(--honey-d)}
 .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:10px}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+@media(max-width:560px){
+  .grid{grid-template-columns:repeat(6,1fr)!important;gap:10px}
+  .f-ga{grid-column:span 6}.f-half{grid-column:span 3}.f-third{grid-column:span 2}
+  .f-third input{padding:10px 8px}
+  .f-third input::placeholder{font-size:.8rem}
+}
+.ga{position:relative;flex:1}
+.ga input{padding-right:34px}
+.ga span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--cocoa-l);font-size:.9rem;pointer-events:none}
+.mgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;margin-top:10px;align-items:start}
+@media(max-width:640px){.mgrid{grid-template-columns:1fr 1fr}.mgrid>.meas:first-child{grid-column:1/-1}}
+.meas{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px 14px}
+.has-tip{position:relative;cursor:help}
+.tipbox{display:none;position:absolute;left:0;top:100%;z-index:5;margin-top:4px;background:var(--cocoa);color:#fff;font-size:.78rem;line-height:1.5;padding:6px 10px;border-radius:10px;width:max-content;max-width:min(300px,80vw);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.has-tip:hover .tipbox,.has-tip.open .tipbox{display:block}
+.mh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:8px}
+.mh .lab{font-weight:700;font-size:1.05rem;color:var(--cocoa)}
+.mh .val{font-weight:600}
+.mr{padding:8px 0;border-bottom:1px dashed var(--line)}
+.mr:last-of-type{border-bottom:0}
+.src{font-size:.8rem;color:var(--cocoa-l);margin-left:4px}
 .swipe-hint{display:none}
 @media(max-width:820px){
   .results{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;margin:10px -18px 0;padding:0 18px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -80,7 +104,6 @@ th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
 <div class="wrap">
 
 <header>
-  <svg class="logo" width="48" height="48" viewBox="0 0 64 64" aria-hidden="true"><g fill="#FFF8EE" stroke="#C98E5A" stroke-width="4.5" stroke-linejoin="round"><circle cx="16" cy="18" r="9"/><circle cx="48" cy="18" r="9"/><ellipse cx="32" cy="37" rx="22" ry="20"/></g></svg>
   <div>
     <h1>Newborn Percentiles</h1>
     <p>出生體重／身長／頭圍百分位區間</p>
@@ -91,30 +114,30 @@ th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
 <section class="card">
   <h2>參數輸入</h2>
   <div class="grid">
-    <div>
+    <div class="f-ga">
       <label>懷孕週數</label>
       <div class="row2">
-        <select id="wk"></select>
-        <select id="dy"></select>
+        <div class="ga"><input id="wk" type="text" inputmode="numeric" maxlength="2" placeholder="38" autocomplete="off" aria-label="週"><span>週</span></div>
+        <div class="ga"><input id="dy" type="text" inputmode="numeric" maxlength="1" placeholder="0" autocomplete="off" aria-label="天"><span>天</span></div>
       </div>
     </div>
-    <div>
+    <div class="f-half">
       <label>性別</label>
-      <div class="seg" id="sex"><button data-v="M" class="on">男</button><button data-v="F">女</button></div>
+      <div class="seg" id="sex" role="radiogroup" aria-label="性別"><button type="button" data-v="M" class="on">男</button><button type="button" data-v="F">女</button></div>
     </div>
-    <div>
+    <div class="f-half">
       <label>胎數</label>
-      <div class="seg" id="plur"><button data-v="single" class="on">單胞胎</button><button data-v="multi">多胞胎</button></div>
+      <div class="seg" id="plur" role="radiogroup" aria-label="胎數"><button type="button" data-v="single" class="on">單胞胎</button><button type="button" data-v="multi">多胞胎</button></div>
     </div>
-    <div>
+    <div class="f-third">
       <label>體重 (g)</label>
       <input id="bw" type="number" inputmode="decimal" placeholder="例：2850">
     </div>
-    <div>
+    <div class="f-third">
       <label>身長 (cm)</label>
       <input id="bl" type="number" inputmode="decimal" step="0.1" placeholder="例：49.5">
     </div>
-    <div>
+    <div class="f-third">
       <label>頭圍 (cm)</label>
       <input id="hc" type="number" inputmode="decimal" step="0.1" placeholder="例：33.0">
     </div>
@@ -124,18 +147,17 @@ th{color:var(--cocoa-l);font-weight:600;font-size:.8rem}
 <section class="card" id="result">
   <h2>評估結果</h2>
   <div id="out"></div>
-  <p class="sub swipe-hint">← 左右滑動查看 Taiwan／Fenton／WHO →</p>
   <div class="copybar"><button class="copybtn" id="copy" type="button">複製結果（純文字）</button></div>
-  <p class="note">百分位以「完成週數」查表（例如 37+5 週以 37 週計）。區間判讀：&lt;P10 為 SGA，P10–P90 為 AGA，&gt;P90 為 LGA。Fenton 以 LMS 計算確切百分位與 z 值。</p>
+  <p class="note">百分位以「完成週數」查表（例如 37+5 週以 37 週計）。區間判讀：&lt;P10 為 SGA，P10–P90 為 AGA，&gt;P90 為 LGA。身長、頭圍依 Fenton 2025 以 LMS 計算確切百分位與 z 值。</p>
 </section>
 
 <section class="card">
   <h2>參考資料</h2>
   <ol class="refs">
-    <li>Hu IJ, et al. Nationwide twin birth weight percentiles by gestational age in Taiwan. <i>Pediatr Neonatol</i>. 2015.<br><span class="sub">用於：Taiwan 雙胞胎（多胞胎）體重</span></li>
-    <li>Wu JL, et al. Nationwide singleton birth weight percentiles for gestational age in Taiwan in 2008–2017. <i>Pediatr Neonatol</i>. 2026.<br><span class="sub">用於：Taiwan 單胞胎體重</span></li>
-    <li>Fenton TR, et al. Fenton third-generation growth charts of preterm infants without abnormal fetal growth: a systematic review and meta-analysis. <i>Paediatr Perinat Epidemiol</i>. 2025.<br><span class="sub">用於：Fenton 2025 體重、身長、頭圍</span></li>
-    <li>Kiserud T, et al. The World Health Organization fetal growth charts: a multinational longitudinal study of ultrasound biometric measurements and estimated fetal weight. <i>PLoS Med</i>. 2017.<br><span class="sub">用於：WHO 體重（EFW）、頭圍</span></li>
+    <li>Hu IJ, et al. Nationwide twin birth weight percentiles by gestational age in Taiwan. <i>Pediatr Neonatol</i>. 2015.<br><span class="sub">用於：體重（Taiwan 雙胞胎）</span></li>
+    <li>Wu JL, et al. Nationwide singleton birth weight percentiles for gestational age in Taiwan in 2008–2017. <i>Pediatr Neonatol</i>. 2026.<br><span class="sub">用於：體重（Taiwan 單胞胎）</span></li>
+    <li>Fenton TR, et al. Fenton third-generation growth charts of preterm infants without abnormal fetal growth: a systematic review and meta-analysis. <i>Paediatr Perinat Epidemiol</i>. 2025.<br><span class="sub">用於：體重（Fenton）、身長、頭圍</span></li>
+    <li>Kiserud T, et al. The World Health Organization fetal growth charts: a multinational longitudinal study of ultrasound biometric measurements and estimated fetal weight. <i>PLoS Med</i>. 2017.<br><span class="sub">用於：體重（WHO，37–42 週）</span></li>
   </ol>
 </section>
 
@@ -168,26 +190,31 @@ const DATA = {
   twin_bw:{ref:1,label:"體重 (雙胞胎)",unit:"g",p:[5,10,25,50,75,90,95],
     M:{"21":[384.7,394.9,419.8,475.6,508.6,571.7,583.3],"22":[384.7,394.9,419.8,475.6,508.6,571.7,583.3],"23":[401.6,440.9,495.4,552.9,619.3,686.3,710.2],"24":[437.4,495.2,568.5,635.6,719.1,790.7,826.3],"25":[492.1,566.9,658.2,739.4,836.8,914.5,963.4],"26":[564.9,654.7,762.9,860.9,969.9,1055.1,1118.2],"27":[654.6,757.1,880.8,996.8,1115.8,1210.0,1287.2],"28":[759.9,872.3,1010.3,1144.0,1272.2,1376.6,1467.1],"29":[879.1,998.4,1149.4,1299.3,1436.4,1552.4,1654.9],"30":[1010.1,1133.4,1295.9,1460.0,1606.4,1735.0,1847.6],"31":[1150.4,1275.1,1447.9,1623.4,1779.7,1922.0,2042.8],"32":[1297.2,1421.2,1602.9,1787.1,1954.5,2111.4,2238.1],"33":[1447.4,1569.2,1758.7,1949.1,2128.9,2301.2,2431.7],"34":[1597.2,1716.5,1912.9,2107.8,2301.1,2489.5,2622.2],"35":[1742.5,1860.2,2062.8,2261.9,2469.9,2674.9,2808.4],"36":[1878.6,1997.5,2205.9,2410.6,2634.2,2856.2,2990.1],"37":[2000.4,2125.2,2339.5,2553.7,2793.2,3032.3,3167.4],"38":[2102.1,2240.1,2460.9,2691.4,2946.4,3202.7,3340.9],"39":[2177.4,2338.8,2567.2,2824.5,3093.9,3367.2,3512.1],"40":[2219.4,2417.8,2655.5,2954.6,3235.8,3525.9,3683.3],"41":[2171.9,2501.8,2766.6,3215.2,3506.9,3828.5,4037.7],"42":[2171.9,2501.8,2766.6,3215.2,3506.9,3828.5,4037.7]},
     F:{"21":[301.5,414.3,436.8,456.1,509.5,538.7,539.7],"22":[301.5,414.3,436.8,456.1,509.5,538.7,539.7],"23":[365.7,446.0,496.0,541.3,597.2,662.1,680.6],"24":[414.8,490.0,555.9,619.3,682.8,758.0,788.4],"25":[475.9,551.2,633.5,716.1,789.9,872.5,915.6],"26":[549.3,628.3,727.0,828.3,914.3,1002.7,1058.5],"27":[634.9,719.9,834.2,952.9,1052.4,1145.9,1213.6],"28":[732.3,824.6,953.4,1087.3,1200.9,1299.9,1378.3],"29":[840.8,940.6,1082.6,1229.1,1356.7,1462.5,1549.9],"30":[959.3,1066.2,1219.8,1376.0,1517.5,1631.8,1726.6],"31":[1086.4,1199.6,1362.9,1526.4,1681.3,1806.1,1906.6],"32":[1220.2,1338.8,1510.1,1678.6,1846.3,1984.1,2088.7],"33":[1358.7,1481.7,1659.3,1831.5,2011.4,2164.5,2272.2],"34":[1499.1,1625.9,1808.4,1984.1,2175.8,2346.4,2456.8],"35":[1638.5,1769.0,1955.5,2135.9,2339.1,2529.1,2642.3],"36":[1773.6,1908.6,2098.4,2286.4,2501.4,2712.2,2829.4],"37":[1900.4,2041.8,2235.2,2435.6,2663.1,2895.4,3018.9],"38":[2014.7,2165.9,2363.6,2583.8,2825.2,3078.7,3212.0],"39":[2111.9,2277.8,2481.7,2731.6,2989.0,3262.5,3410.5],"40":[2186.6,2374.3,2587.2,2879.7,3156.2,3447.2,3616.6],"41":[2245.5,2507.6,2752.3,3182.0,3510.1,3822.5,4061.8],"42":[2245.5,2507.6,2752.3,3182.0,3510.1,3822.5,4061.8]}},
-  /* Kiserud 2017 Table 14（女）/ Table 15（男）：EFW */
-  who_bw:{ref:4,label:"體重 (EFW)",unit:"g",p:[5,10,25,50,75,90,95],
-    M:{"14":[75.0,79.0,84.0,92.0,99.0,105.0,109.0],"15":[96.0,100.0,107.0,116.0,126.0,134.0,139.0],"16":[121.0,127.0,136.0,146.0,158.0,169.0,175.0],"17":[152.0,158.0,170.0,183.0,197.0,210.0,219.0],"18":[188.0,196.0,210.0,226.0,243.0,260.0,271.0],"19":[232.0,241.0,258.0,277.0,298.0,320.0,333.0],"20":[282.0,293.0,314.0,337.0,362.0,389.0,405.0],"21":[341.0,354.0,380.0,407.0,436.0,469.0,489.0],"22":[408.0,424.0,454.0,487.0,522.0,561.0,586.0],"23":[484.0,503.0,539.0,578.0,619.0,666.0,695.0],"24":[570.0,592.0,635.0,681.0,730.0,785.0,818.0],"25":[666.0,692.0,742.0,795.0,853.0,917.0,956.0],"26":[772.0,803.0,860.0,923.0,990.0,1063.0,1109.0],"27":[888.0,924.0,989.0,1063.0,1141.0,1224.0,1276.0],"28":[1014.0,1055.0,1129.0,1215.0,1305.0,1399.0,1458.0],"29":[1149.0,1197.0,1281.0,1379.0,1482.0,1587.0,1654.0],"30":[1293.0,1349.0,1442.0,1555.0,1672.0,1788.0,1863.0],"31":[1445.0,1509.0,1613.0,1741.0,1874.0,2000.0,2085.0],"32":[1605.0,1677.0,1793.0,1937.0,2085.0,2224.0,2319.0],"33":[1770.0,1852.0,1980.0,2140.0,2306.0,2456.0,2562.0],"34":[1941.0,2032.0,2174.0,2350.0,2534.0,2694.0,2814.0],"35":[2114.0,2217.0,2372.0,2565.0,2767.0,2938.0,3072.0],"36":[2290.0,2404.0,2574.0,2783.0,3002.0,3185.0,3334.0],"37":[2466.0,2591.0,2777.0,3001.0,3238.0,3432.0,3598.0],"38":[2641.0,2778.0,2981.0,3218.0,3472.0,3676.0,3863.0],"39":[2813.0,2962.0,3183.0,3432.0,3701.0,3916.0,4125.0],"40":[2981.0,3142.0,3382.0,3639.0,3923.0,4149.0,4383.0]},
-    F:{"14":[73.0,77.0,82.0,89.0,96.0,102.0,107.0],"15":[92.0,97.0,104.0,113.0,121.0,129.0,135.0],"16":[116.0,122.0,131.0,141.0,152.0,162.0,170.0],"17":[145.0,152.0,164.0,176.0,189.0,202.0,211.0],"18":[180.0,188.0,202.0,217.0,233.0,248.0,261.0],"19":[221.0,231.0,248.0,266.0,285.0,304.0,319.0],"20":[269.0,281.0,302.0,322.0,346.0,369.0,387.0],"21":[324.0,339.0,364.0,388.0,417.0,444.0,466.0],"22":[388.0,405.0,435.0,464.0,499.0,530.0,557.0],"23":[461.0,481.0,516.0,551.0,592.0,629.0,660.0],"24":[542.0,567.0,608.0,649.0,697.0,740.0,776.0],"25":[634.0,663.0,710.0,758.0,815.0,865.0,907.0],"26":[735.0,769.0,823.0,880.0,946.0,1003.0,1051.0],"27":[846.0,886.0,948.0,1014.0,1090.0,1156.0,1210.0],"28":[967.0,1013.0,1083.0,1160.0,1247.0,1323.0,1383.0],"29":[1096.0,1150.0,1230.0,1319.0,1418.0,1505.0,1570.0],"30":[1234.0,1296.0,1386.0,1489.0,1601.0,1699.0,1770.0],"31":[1379.0,1451.0,1553.0,1670.0,1796.0,1907.0,1984.0],"32":[1530.0,1614.0,1728.0,1861.0,2002.0,2127.0,2209.0],"33":[1687.0,1783.0,1911.0,2060.0,2217.0,2358.0,2445.0],"34":[1847.0,1957.0,2101.0,2268.0,2440.0,2598.0,2690.0],"35":[2008.0,2135.0,2296.0,2481.0,2669.0,2846.0,2943.0],"36":[2169.0,2314.0,2494.0,2698.0,2902.0,3099.0,3201.0],"37":[2329.0,2493.0,2695.0,2917.0,3138.0,3357.0,3462.0],"38":[2484.0,2670.0,2896.0,3136.0,3373.0,3616.0,3725.0],"39":[2633.0,2843.0,3096.0,3354.0,3605.0,3875.0,3988.0],"40":[2775.0,3010.0,3294.0,3567.0,3832.0,4131.0,4247.0]}},
-  /* Kiserud 2017 Table 7：頭圍（不分性別，mm 換算為 cm） */
-  who_hc:{ref:4,label:"頭圍",unit:"cm",p:[2.5,5,10,25,50,75,90,95,97.5],
-    M:{"14":[8.6,8.8,9.1,9.5,10.0,10.4,10.7,11.0,11.2],"15":[9.7,9.9,10.2,10.6,11.1,11.5,11.9,12.2,12.4],"16":[10.8,11.1,11.4,11.8,12.3,12.8,13.2,13.4,13.7],"17":[12.0,12.3,12.6,13.0,13.5,14.0,14.4,14.7,14.9],"18":[13.2,13.5,13.8,14.3,14.8,15.3,15.7,16.0,16.2],"19":[14.5,14.7,15.0,15.5,16.1,16.6,17.0,17.3,17.5],"20":[15.7,15.9,16.3,16.8,17.3,17.9,18.3,18.6,18.8],"21":[16.9,17.2,17.5,18.0,18.6,19.1,19.6,19.9,20.1],"22":[18.1,18.4,18.7,19.3,19.8,20.4,20.9,21.2,21.4],"23":[19.3,19.6,19.9,20.5,21.0,21.6,22.1,22.4,22.7],"24":[20.4,20.7,21.1,21.6,22.2,22.8,23.3,23.6,23.9],"25":[21.5,21.8,22.2,22.7,23.3,23.9,24.5,24.8,25.1],"26":[22.5,22.8,23.2,23.8,24.4,25.0,25.6,25.9,26.2],"27":[23.4,23.8,24.2,24.8,25.4,26.1,26.7,27.0,27.3],"28":[24.3,24.7,25.1,25.7,26.4,27.0,27.7,28.0,28.3],"29":[25.1,25.6,26.0,26.6,27.3,28.0,28.6,29.0,29.3],"30":[25.9,26.4,26.8,27.4,28.1,28.8,29.5,29.9,30.2],"31":[26.6,27.1,27.5,28.2,28.9,29.6,30.3,30.7,31.1],"32":[27.3,27.8,28.2,28.9,29.6,30.4,31.1,31.5,31.8],"33":[27.9,28.4,28.9,29.5,30.3,31.1,31.8,32.2,32.6],"34":[28.5,29.0,29.5,30.2,30.9,31.7,32.4,32.8,33.2],"35":[29.1,29.6,30.0,30.7,31.5,32.3,33.0,33.5,33.8],"36":[29.6,30.1,30.6,31.3,32.1,32.9,33.6,34.0,34.4],"37":[30.2,30.6,31.1,31.8,32.6,33.4,34.1,34.5,34.9],"38":[30.7,31.1,31.5,32.4,33.2,33.9,34.7,35.0,35.4],"39":[31.3,31.6,32.0,32.9,33.7,34.4,35.2,35.5,35.9],"40":[31.9,32.1,32.5,33.4,34.2,35.0,35.7,36.0,36.3]},
-    F:{"14":[8.6,8.8,9.1,9.5,10.0,10.4,10.7,11.0,11.2],"15":[9.7,9.9,10.2,10.6,11.1,11.5,11.9,12.2,12.4],"16":[10.8,11.1,11.4,11.8,12.3,12.8,13.2,13.4,13.7],"17":[12.0,12.3,12.6,13.0,13.5,14.0,14.4,14.7,14.9],"18":[13.2,13.5,13.8,14.3,14.8,15.3,15.7,16.0,16.2],"19":[14.5,14.7,15.0,15.5,16.1,16.6,17.0,17.3,17.5],"20":[15.7,15.9,16.3,16.8,17.3,17.9,18.3,18.6,18.8],"21":[16.9,17.2,17.5,18.0,18.6,19.1,19.6,19.9,20.1],"22":[18.1,18.4,18.7,19.3,19.8,20.4,20.9,21.2,21.4],"23":[19.3,19.6,19.9,20.5,21.0,21.6,22.1,22.4,22.7],"24":[20.4,20.7,21.1,21.6,22.2,22.8,23.3,23.6,23.9],"25":[21.5,21.8,22.2,22.7,23.3,23.9,24.5,24.8,25.1],"26":[22.5,22.8,23.2,23.8,24.4,25.0,25.6,25.9,26.2],"27":[23.4,23.8,24.2,24.8,25.4,26.1,26.7,27.0,27.3],"28":[24.3,24.7,25.1,25.7,26.4,27.0,27.7,28.0,28.3],"29":[25.1,25.6,26.0,26.6,27.3,28.0,28.6,29.0,29.3],"30":[25.9,26.4,26.8,27.4,28.1,28.8,29.5,29.9,30.2],"31":[26.6,27.1,27.5,28.2,28.9,29.6,30.3,30.7,31.1],"32":[27.3,27.8,28.2,28.9,29.6,30.4,31.1,31.5,31.8],"33":[27.9,28.4,28.9,29.5,30.3,31.1,31.8,32.2,32.6],"34":[28.5,29.0,29.5,30.2,30.9,31.7,32.4,32.8,33.2],"35":[29.1,29.6,30.0,30.7,31.5,32.3,33.0,33.5,33.8],"36":[29.6,30.1,30.6,31.3,32.1,32.9,33.6,34.0,34.4],"37":[30.2,30.6,31.1,31.8,32.6,33.4,34.1,34.5,34.9],"38":[30.7,31.1,31.5,32.4,33.2,33.9,34.7,35.0,35.4],"39":[31.3,31.6,32.0,32.9,33.7,34.4,35.2,35.5,35.9],"40":[31.9,32.1,32.5,33.4,34.2,35.0,35.7,36.0,36.3]}}
+  /* Kiserud 2017 Table 4：出生時體重（分娩時測量，37–42 週；原表無 P10） */
+  who_bw:{ref:4,label:"出生體重",unit:"g",p:[5,25,50,75,90,95],
+    M:{"37":[2062,2705,2919,3143,3450,3584],"38":[2451,2890,3153,3387,3666,3813],"39":[2723,3061,3354,3608,3871,4036],"40":[2880,3218,3519,3806,4067,4251],"41":[2921,3362,3650,3982,4253,4459],"42":[2845,3491,3747,4134,4428,4659]},
+    F:{"37":[1968,2493,2786,2951,3181,3238],"38":[2315,2698,2990,3217,3451,3593],"39":[2575,2891,3173,3443,3682,3867],"40":[2748,3072,3336,3631,3871,4060],"41":[2835,3241,3479,3779,4021,4171],"42":[2834,3398,3601,3888,4130,4200]}}
 };
 
 /* ---------- UI ---------- */
 const $ = id => document.getElementById(id);
-for(let w=22; w<=42; w++) $("wk").add(new Option(w+" 週", w));
-$("wk").value = 38;
-for(let d=0; d<=6; d++) $("dy").add(new Option(d+" 天", d));
+// 週數／天數：數字輸入，輸入滿位數自動跳下一格（Tab 亦可）
+const digits = el => el.value = el.value.replace(/\D/g,"");
+$("wk").addEventListener("input",()=>{ digits($("wk")); if($("wk").value.length===2) $("dy").focus(); });
+$("dy").addEventListener("input",()=>{ digits($("dy")); if($("dy").value.length===1) $("sex").querySelector(".on").focus(); });
+[$("wk"),$("dy")].forEach(el=>el.addEventListener("focus",()=>el.select()));
+
+// 性別／胎數：每組一個 Tab 停點，←→ 或 空白鍵 切換
 document.querySelectorAll(".seg").forEach(seg=>{
-  seg.addEventListener("click",e=>{
-    if(e.target.tagName!=="BUTTON") return;
-    seg.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===e.target));
-    render();
+  const btns=[...seg.querySelectorAll("button")];
+  const pick=b=>{ btns.forEach(x=>{x.classList.toggle("on",x===b); x.tabIndex = x===b?0:-1; x.setAttribute("aria-checked",x===b);}); render(); };
+  btns.forEach(b=>{ b.setAttribute("role","radio"); b.tabIndex=b.classList.contains("on")?0:-1; b.setAttribute("aria-checked",b.classList.contains("on")); });
+  seg.addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) pick(b); });
+  seg.addEventListener("keydown",e=>{
+    const i=btns.findIndex(b=>b.classList.contains("on"));
+    if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key)){
+      e.preventDefault(); const n=btns[(i+1)%btns.length]; pick(n); n.focus();
+    }
   });
 });
 const segVal = id => $(id).querySelector(".on").dataset.v;
@@ -233,7 +260,7 @@ function interval(tbl, sex, wk, v){
   const i10 = p.indexOf(10), i90 = p.indexOf(90);
   let cls = "aga", tag = "";
   if(i10>=0 && v < row[i10]){cls="sga"; tag=" · SGA";}
-  else if(i90>=0 && v > row[i90]){cls="lga"; tag=" · LGA";}
+  else if(i10>=0 && i90>=0 && v > row[i90]){cls="lga"; tag=" · LGA";}
   else if(i10>=0 && i90>=0){tag=" · AGA";}
   return {txt: txt+tag, cls, row, p};
 }
@@ -249,37 +276,51 @@ function rowHTML(tbl, sex, wk, v){
 
 function num(id){ const s=$(id).value.trim(); return s===""?null:parseFloat(s); }
 
-function block(title, rows, notes){
-  return `<div class="blk"><h3>${title}</h3>
-    ${rows.join("")}
-    ${notes.map(n=>`<p class="sub">${n}</p>`).join("")}</div>`;
+function resLine(tbl, sex, wk, v, src){
+  const r = interval(tbl, sex, wk, v);
+  const tip = r.row ? `${r.p.map((q,i)=>"P"+q+" "+r.row[i]).join("　")} ${tbl.unit}` : (r.lmsNote||"");
+  return `<div class="mr${tip?" has-tip":""}"><span class="pill ${r.cls}">${r.txt}</span>${src?` <span class="src">${src}</span>`:""}${tip?`<span class="tipbox">${tip}</span>`:""}</div>`;
 }
-
+function meas(name, v, unit, lines, notes){
+  return `<div class="meas"><div class="mh"><span class="lab">${name}</span><span class="val">${v===null||isNaN(v)?"—":v+" "+unit}</span></div>
+    ${lines.join("")}${(notes||[]).map(n=>`<p class="sub">${n}</p>`).join("")}</div>`;
+}
+function bwSources(multi){
+  return [[multi?DATA.twin_bw:DATA.tw2026_bw, multi?"Taiwan 雙胞胎":"Taiwan"],[DATA.fenton_bw,"Fenton"],[DATA.who_bw,"WHO"]];
+}
+function gaOK(){ const w=+$("wk").value, d=$("dy").value===""?0:+$("dy").value;
+  return $("wk").value!=="" && w>=22 && w<=42 && d>=0 && d<=6; }
 function render(){
-  const wk = +$("wk").value, sex = segVal("sex"), multi = segVal("plur")==="multi";
+  if(!gaOK()){
+    $("out").innerHTML = `<p class="sub">${$("wk").value===""?"請輸入懷孕週數（22–42 週）":"週數需為 22–42 週、天數 0–6"}</p>`; return;
+  }
+  const wk = +$("wk").value, dy = $("dy").value||"0", sex = segVal("sex"), multi = segVal("plur")==="multi";
   const bw=num("bw"), bl=num("bl"), hc=num("hc");
-  const single = multi ? ["此參考標準未區分胎數，以單胞胎資料比較。"] : [];
-  const tw = multi
-    ? block("Taiwan", [rowHTML(DATA.twin_bw,sex,wk,bw)], ["雙胞胎資料：≤22 週與 ≥41 週為合併組。"])
-    : block("Taiwan", [rowHTML(DATA.tw2026_bw,sex,wk,bw)], []);
-  const fe = block("Fenton 2025", [rowHTML(DATA.fenton_bw,sex,wk,bw), rowHTML(DATA.fenton_bl,sex,wk,bl), rowHTML(DATA.fenton_hc,sex,wk,hc)], single);
-  const wh = block("WHO", [rowHTML(DATA.who_bw,sex,wk,bw), rowHTML(DATA.who_hc,sex,wk,hc)],
-    single.concat(["WHO 為超音波推估胎兒體重 (EFW, 14–40 週)，非出生測量值；頭圍不分性別。"]));
-  $("out").innerHTML = `<p class="sub">${wk} 週 ${$("dy").value} 天 · ${sex==="M"?"男":"女"} · ${multi?"多胞胎":"單胞胎"}</p><div class="results">${tw}${fe}${wh}</div>`;
+  const notes = [];
+  if(multi) notes.push("Fenton、WHO 未區分胎數；Taiwan 雙胞胎 ≤22、≥41 週為合併組。");
+  notes.push("WHO 僅 37–42 週，原表無 P10，不判讀 SGA/LGA。");
+  const has=v=>!(v===null||isNaN(v));
+  const bwHTML = meas("體重", bw, "g", has(bw) ? bwSources(multi).map(([t,s])=>resLine(t,sex,wk,bw,s)) : [], has(bw)?notes:[]);
+  const blHTML = meas("身長", bl, "cm", has(bl) ? [resLine(DATA.fenton_bl,sex,wk,bl,"")] : []);
+  const hcHTML = meas("頭圍", hc, "cm", has(hc) ? [resLine(DATA.fenton_hc,sex,wk,hc,"")] : []);
+  $("out").innerHTML = `<p class="sub">${wk} 週 ${dy} 天 · ${sex==="M"?"男":"女"} · ${multi?"多胞胎":"單胞胎"}</p><div class="mgrid">${bwHTML}${blHTML}${hcHTML}</div>`;
 }
+// 手機：點一下顯示百分位切點
+$("out").addEventListener("click",e=>{ const m=e.target.closest(".has-tip"); document.querySelectorAll(".mr.open").forEach(x=>{ if(x!==m) x.classList.remove("open"); }); if(m) m.classList.toggle("open"); });
 
 function plainText(){
-  const wk = +$("wk").value, d=$("dy").value, sex = segVal("sex"), multi = segVal("plur")==="multi";
+  if(!gaOK()) return "";
+  const wk = +$("wk").value, d=$("dy").value||"0", sex = segVal("sex"), multi = segVal("plur")==="multi";
   const bw=num("bw"), bl=num("bl"), hc=num("hc");
-  const f=(tbl,v)=>{ const r=interval(tbl,sex,wk,v); return r.cls==="na"? null : r.txt.replace(" · "," ")+(r.lmsNote? " ("+r.lmsNote.split("　")[0]+")" : ""); };
-  const line=(name,v,unit,list)=>{ if(v===null||isNaN(v)) return null;
-    const parts=list.map(([lab,tbl])=>{const t=f(tbl,v); return t? `${lab} ${t}`:null}).filter(Boolean);
-    return `${name} ${v} ${unit}: `+(parts.join("; ")||"—"); };
-  const tw = multi? [["Taiwan twin",DATA.twin_bw]] : [["Taiwan",DATA.tw2026_bw]];
-  return [`GA ${wk}+${d} wk, ${sex==="M"?"male":"female"}, ${multi?"multiple":"singleton"}`,
-    line("BW",bw,"g",[...tw,["Fenton",DATA.fenton_bw],["WHO",DATA.who_bw]]),
-    line("BL",bl,"cm",[["Fenton",DATA.fenton_bl]]),
-    line("HC",hc,"cm",[["Fenton",DATA.fenton_hc],["WHO",DATA.who_hc]])].filter(Boolean).join("\n");
+  const f=(tbl,v)=>{ const r=interval(tbl,sex,wk,v); return r.cls==="na"? null : r.txt.replace(" · "," ")+(r.lmsNote? ", "+r.lmsNote.split("　")[0] : ""); };
+  const out=[`GA ${wk}+${d} wk, ${sex==="M"?"male":"female"}, ${multi?"multiple":"singleton"}`];
+  if(bw!==null&&!isNaN(bw)){
+    const parts=bwSources(multi).map(([t,s])=>{const x=f(t,bw); return x? `${x} (${s.replace(" 雙胞胎"," twin")})`:null}).filter(Boolean);
+    out.push(`BW ${bw} g: `+(parts.join("; ")||"—"));
+  }
+  if(bl!==null&&!isNaN(bl)) out.push(`BL ${bl} cm: `+(f(DATA.fenton_bl,bl)||"—"));
+  if(hc!==null&&!isNaN(hc)) out.push(`HC ${hc} cm: `+(f(DATA.fenton_hc,hc)||"—"));
+  return out.join("\n");
 }
 $("copy").addEventListener("click",async()=>{
   const t=plainText(); const btn=$("copy");
