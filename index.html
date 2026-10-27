@@ -1669,13 +1669,13 @@ function MeasurementForm({ patient, initial, onSave, onCancel }) {
   // Text for the small copy button next to the growth-velocity panel
   const velocityText = useMemo(() => {
     if (!velocity) return "";
-    const seg = (label, v, unit) => {
+    const seg = (v, unit) => {
       if (!v) return null;
       const sign = (x) => (x >= 0 ? "+" : "");
       const rate = v.perYear != null ? ` (${sign(v.perYear)}${fmt(v.perYear, 1)} ${unit}/yr)` : "";
-      return `${label} ${fmt(v.before, 1)} → ${fmt(v.after, 1)} ${sign(v.delta)}${fmt(v.delta, 1)}/${velocity.months}m${rate}`;
+      return `${fmt(v.before, 1)} → ${fmt(v.after, 1)} ${sign(v.delta)}${fmt(v.delta, 1)}/${velocity.months}m${rate}`;
     };
-    return [seg("BH", velocity.h, "cm"), seg("BW", velocity.w, "kg")].filter(Boolean).join(" ");
+    return [seg(velocity.h, "cm"), seg(velocity.w, "kg")].filter(Boolean).join(" ");
   }, [velocity]);
 
   const submit = () => {
