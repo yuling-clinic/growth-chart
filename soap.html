@@ -242,7 +242,7 @@
       <div class="body">
         <div class="row" style="margin-bottom:6px">
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px">
-            <input type="checkbox" id="generalPeOn" checked style="cursor:pointer">
+            <input type="checkbox" id="generalPeOn" style="cursor:pointer">
             <span>一般 PE 正常敘述</span>
           </label>
           <span class="hint" style="margin:0">HEENT / Chest / Heart / Abdomen / Ext；取消勾選則不寫入病歷（Thyroid、Skin 不受影響）</span>
@@ -415,7 +415,7 @@ const SEMS_JUNIOR=["國一上","國一下","國二上","國二下","國三上","
 // Canonical order (used for reading values back out); the on-screen columns are laid out separately
 const SEMS=[...SEMS_KG,...SEMS_ELEM,...SEMS_JUNIOR];
 
-const S={tpl:"growth",sex:"f",find:{},note:{},txt:{},tags:new Set(),growth:{},dysmorphicOn:false,twinOn:false,pubertyOn:true,generalPeOn:true,
+const S={tpl:"growth",sex:"f",find:{},note:{},txt:{},tags:new Set(),growth:{},dysmorphicOn:false,twinOn:false,pubertyOn:true,generalPeOn:false,
   seg:{delivery:"NSD",dms:"",breastside:"",twin:"A"},
   tanner:{breast:"I",pubic:"I"}};
 const CC_DEFAULT="";
@@ -521,14 +521,14 @@ document.getElementById("twinOn").addEventListener("change",e=>{S.twinOn=e.targe
 document.querySelectorAll(".card.collapsible > h2").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("collapsed")));
 document.getElementById("resetBtn").addEventListener("click",()=>{
   if(!confirm("清除所有已填欄位？"))return;
-  S.find={};S.note={};S.txt={};S.tags=new Set();S.growth={};S.ccConn="for";S.dysmorphicOn=false;S.twinOn=false;S.generalPeOn=true;
+  S.find={};S.note={};S.txt={};S.tags=new Set();S.growth={};S.ccConn="for";S.dysmorphicOn=false;S.twinOn=false;S.generalPeOn=false;
   S.pubertyOn=(S.tpl!=="obesity");
   S.seg={delivery:"NSD",dms:"",breastside:"",twin:"A"};
   S.tanner={breast:"I",pubic:"I"};
   document.querySelectorAll("input,textarea.plain,textarea[data-f],textarea[data-note-g]").forEach(i=>{if(i.type!=="checkbox")i.value="";});
   document.getElementById("dysmorphicOn").checked=false;
   document.getElementById("twinOn").checked=false;
-  document.getElementById("generalPeOn").checked=true;
+  document.getElementById("generalPeOn").checked=false;
   document.getElementById("pubertyOn").checked=S.pubertyOn;
   document.getElementById("ccPreset").value="";document.getElementById("ccConnWord").textContent="for";
   document.querySelectorAll(".chip").forEach(c=>{c.classList.remove("pos");c.querySelector(".sign").textContent="(−)";});
@@ -616,10 +616,16 @@ function render(){
 
   const ph=[birth];
   // Systemic disease — chips + tag selections + free text
-  let sysBase=parts("ss_sys").join(" ");
   const sysExtra=[...sysdzSel(),...(has("ss_sysdz")?[t("ss_sysdz")]:[])];
-  if(sysExtra.length)sysBase+=`, ${sysExtra.join(", ")}`;
-  ph.push(`Systemic disease: ${sysBase}`);
+  const sysAny=FIND["ss_sys"].some(([k])=>on("ss_sys",k))||sysExtra.length>0;
+  if(!sysAny){
+    // Nothing flagged — report a plain denial rather than listing every item as (-)
+    ph.push("Systemic disease: denied");
+  }else{
+    let sysBase=parts("ss_sys").join(" ");
+    if(sysExtra.length)sysBase+=`, ${sysExtra.join(", ")}`;
+    ph.push(`Systemic disease: ${sysBase}`);
+  }
   // Drug use — both chip groups combined
   const drugLine=`Systemic or topical drug use: ${parts("drug_pp").concat(parts("drug_ss")).join(", ")}`;
   ph.push(drugLine);
@@ -778,9 +784,16 @@ document.getElementById("transferBtn").addEventListener("click",()=>{
     alert("無法寫入本機儲存：" + e.message);
     return;
   }
-  const targetBase=window.location.origin+"/growth-chart/";
-  const targetUrl=targetBase+"?transfer=1&t="+Date.now();
-  window.open(targetUrl,"_blank");
+  // Resolve the growth-chart page relative to this file, so the hand-off works both
+  // offline (file://, both files in one folder) and online. location.origin is unusable
+  // offline: on file:// it is "file://", which would resolve to the filesystem root.
+  const here=window.location.href.split(/[?#]/)[0];
+  let target=new URL("index.html",here).href;
+  if(target===here){
+    // This page IS index.html — the standalone SOAP-generator deployment; hop to the sibling project
+    target=new URL("../growth-chart/index.html",here).href;
+  }
+  window.open(target+"?transfer=1&t="+Date.now(),"_blank");
 });
 </script>
 </body>
